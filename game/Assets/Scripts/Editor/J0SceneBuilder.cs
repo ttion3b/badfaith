@@ -50,6 +50,16 @@ namespace BadFaith.EditorTools
             ScatterCubes(cubePrefab);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+
+            /* Les SceneIds FishNet ne peuvent pas être créés avant que la scène ait
+             * un chemin (OnValidate des NetworkObject tourne à vide sur une scène
+             * non sauvée). On rejoue donc l'équivalent exact du menu
+             * Tools > Fish-Networking > Utility > Reserialize NetworkObjects,
+             * puis on resauve. Les méthodes sont internal → réflexion (FishNet
+             * vendoré, version figée). */
+            ReserializeSceneNetworkObjects(scene);
+            EditorSceneManager.SaveScene(scene);
+
             AddSceneToBuildSettings();
 
             Debug.Log("[J0SceneBuilder] Scène J0 construite : " + ScenePath + " — presse Play puis HÉBERGER.");
@@ -236,6 +246,34 @@ namespace BadFaith.EditorTools
                 float z = (float)(rng.NextDouble() * 20.0 - 10.0);
                 instance.transform.position = new Vector3(x, 0.5f + i * 0.05f, z);
             }
+        }
+
+        private static void ReserializeSceneNetworkObjects(Scene scene)
+        {
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public;
+            var createSceneId = typeof(NetworkObject).GetMethod(
+                "CreateSceneId",
+                flags | System.Reflection.BindingFlags.Static,
+                null,
+                new[] { typeof(Scene), typeof(bool), typeof(int).MakeByRefType() },
+                null);
+            var reserialize = typeof(NetworkObject).GetMethod(
+                "ReserializeEditorSetValues",
+                flags | System.Reflection.BindingFlags.Instance);
+            if (createSceneId == null || reserialize == null)
+            {
+                Debug.LogError("[J0SceneBuilder] API interne FishNet introuvable — lance manuellement Tools > Fish-Networking > Utility > Reserialize NetworkObjects (Scenes).");
+                return;
+            }
+
+            object[] args = { scene, true, 0 };
+            var nobs = (System.Collections.Generic.List<NetworkObject>)createSceneId.Invoke(null, args);
+            foreach (var nob in nobs)
+            {
+                reserialize.Invoke(nob, new object[] { true, false });
+                EditorUtility.SetDirty(nob);
+            }
+            Debug.Log($"[J0SceneBuilder] SceneIds FishNet régénérés pour {nobs.Count} NetworkObjects de scène.");
         }
 
         private static void AddSceneToBuildSettings()
