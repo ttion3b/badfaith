@@ -13,10 +13,14 @@ namespace BadFaith.Gameplay
     /// </summary>
     public class HazardExecutor : NetworkBehaviour
     {
+        private const float GasDamagePerSecond = 15f;
+
         private Light _sun;
         private float _sunIntensity;
         private Color _ambient;
         private Coroutine _blackout;
+        /// <summary>Zones de gaz actives, côté serveur, pour les dégâts.</summary>
+        private readonly System.Collections.Generic.List<(Vector3 pos, float radius, float until)> _serverGasZones = new System.Collections.Generic.List<(Vector3, float, float)>();
 
         /// <summary>Serveur : point d'entrée unique, Pacte ou naturel.</summary>
         public void ServerExecute(HazardEvent evt)
@@ -28,10 +32,36 @@ namespace BadFaith.Gameplay
                     break;
                 case HazardType.GasLeak:
                     Vector3 pos = new Vector3(Random.Range(-14f, 14f), 2.5f, Random.Range(-14f, 14f));
+                    _serverGasZones.Add((pos, 5f, Time.time + evt.DurationSeconds));
                     RpcGasLeak(pos, 5f, evt.DurationSeconds);
                     break;
                 // Porte grippée, brouillage, sol électrifié, panne du Terminal :
                 // pas encore de support dans la boîte grise — no-op silencieux.
+            }
+        }
+
+        private void Update()
+        {
+            if (!IsServerInitialized || _serverGasZones.Count == 0)
+                return;
+
+            _serverGasZones.RemoveAll(z => Time.time > z.until);
+            if (_serverGasZones.Count == 0)
+                return;
+
+            int damage = Mathf.CeilToInt(GasDamagePerSecond * Time.deltaTime);
+            foreach (var health in FindObjectsByType<PlayerHealth>(FindObjectsSortMode.None))
+            {
+                if (health.IsDead)
+                    continue;
+                foreach (var zone in _serverGasZones)
+                {
+                    if (Vector3.Distance(health.transform.position, zone.pos) <= zone.radius)
+                    {
+                        health.ServerDamage(damage);
+                        break;
+                    }
+                }
             }
         }
 

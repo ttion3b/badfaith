@@ -26,9 +26,23 @@ namespace BadFaith.Gameplay
             DepositTerminal.Instance != null &&
             Vector3.Distance(transform.position, DepositTerminal.Instance.transform.position) <= DepositTerminal.Instance.DepositRange;
 
+        /// <summary>Serveur : lâche l'objet porté (mort, fin de manche).</summary>
+        public void ServerDropHeld()
+        {
+            if (_serverHeld == null)
+                return;
+            _serverHeld.ServerRelease(Vector3.zero);
+            _serverHeld = null;
+            _isHolding.Value = false;
+        }
+
         private void Update()
         {
             if (!IsOwner || Cursor.lockState != CursorLockMode.Locked)
+                return;
+
+            var health = GetComponent<PlayerHealth>();
+            if (health != null && health.IsDead)
                 return;
 
             Keyboard kb = Keyboard.current;
@@ -49,6 +63,16 @@ namespace BadFaith.Gameplay
                 if (kb.hKey.wasPressedThisFrame)
                     RpcDeposit(false);
             }
+
+            if (kb.bKey.wasPressedThisFrame && RoundManager.Instance != null)
+                RpcPressRedButton();
+        }
+
+        [ServerRpc]
+        private void RpcPressRedButton()
+        {
+            if (RoundManager.Instance != null)
+                RoundManager.Instance.ServerTryRedButton(OwnerId, transform.position);
         }
 
         private void OnGUI()

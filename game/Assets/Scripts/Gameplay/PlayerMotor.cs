@@ -51,6 +51,10 @@ namespace BadFaith.Gameplay
             if (!IsOwner)
                 return;
 
+            // Mort : plus de déplacement, mais on peut encore regarder autour (et écouter…).
+            var health = GetComponent<PlayerHealth>();
+            bool dead = health != null && health.IsDead;
+
             Keyboard kb = Keyboard.current;
             Mouse mouse = Mouse.current;
             if (kb == null || mouse == null)
@@ -75,6 +79,9 @@ namespace BadFaith.Gameplay
                 _pitch = Mathf.Clamp(_pitch - look.y, -85f, 85f);
                 _cameraHolder.localEulerAngles = new Vector3(_pitch, 0f, 0f);
             }
+
+            if (dead || !_controller.enabled)
+                return;
 
             Vector2 input = Vector2.zero;
             if (kb.wKey.isPressed) input.y += 1f;

@@ -77,10 +77,17 @@ namespace BadFaith.Gameplay
 
             float now = Time.time;
 
-            // Purge des déconnectés.
+            // Purge des déconnectés ; les morts ne reçoivent plus d'offres.
             foreach (var gone in _watches.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList())
                 _watches.Remove(gone);
-            var players = _watches.Keys.ToList();
+            var players = _watches
+                .Where(kv =>
+                {
+                    var health = kv.Value.GetComponent<PlayerHealth>();
+                    return health == null || !health.IsDead;
+                })
+                .Select(kv => kv.Key)
+                .ToList();
 
             // 1. Nouvelles offres → montres.
             foreach (var offer in _pactes.Tick(now, players))

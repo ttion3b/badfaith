@@ -1,3 +1,4 @@
+using System.Linq;
 using BadFaith.Core;
 using BadFaith.Core.Economy;
 using FishNet.Component.Spawning;
@@ -79,6 +80,19 @@ namespace BadFaith.Gameplay
             _pot.Value = _ledger.CommonPot;
             foreach (var id in _watches.Keys)
                 MirrorPocket(id);
+        }
+
+        /// <summary>Serveur : vainqueur = l'extrait le plus riche (-1 si aucun).</summary>
+        public int ServerWinner(System.Collections.Generic.IReadOnlyCollection<int> extractedPlayers)
+            => _ledger.Winner(extractedPlayers.ToList());
+
+        /// <summary>Serveur : photographie des poches pour le tableau de fin de manche.</summary>
+        public System.Collections.Generic.List<(int playerId, int pocket)> ServerSnapshot()
+        {
+            var result = new System.Collections.Generic.List<(int, int)>();
+            foreach (var id in _watches.Keys)
+                result.Add((id, _ledger.PocketOf(id)));
+            return result;
         }
 
         private void MirrorPocket(int playerId)

@@ -66,6 +66,7 @@ namespace BadFaith.EditorTools
 
             BuildArena();
             BuildTerminal();
+            BuildCapsule();
             Transform[] spawns = BuildSpawnPoints();
             BuildNetworkManager(playerPrefab, spawns);
             BuildGameServices();
@@ -169,6 +170,29 @@ namespace BadFaith.EditorTools
             go.AddComponent<HazardExecutor>();
             go.AddComponent<PacteNetworkService>();
             go.AddComponent<EconomyNetworkService>();
+            go.AddComponent<RoundManager>();
+        }
+
+        /// <summary>La capsule d'extraction, au nord de l'arène. Position/rayon : RoundManager.CapsuleCenter.</summary>
+        private static void BuildCapsule()
+        {
+            Vector3 c = RoundManager.CapsuleCenter;
+            var parent = new GameObject("Capsule");
+            parent.transform.position = c;
+
+            CreateBox("CapsuleSol", new Vector3(c.x, 0.05f, c.z), new Vector3(6, 0.1f, 5), new Color(0.2f, 0.35f, 0.25f)).transform.SetParent(parent.transform);
+            CreateBox("CapsuleMur_N", new Vector3(c.x, 1.5f, c.z + 2.4f), new Vector3(6, 3, 0.2f), new Color(0.3f, 0.45f, 0.35f)).transform.SetParent(parent.transform);
+            CreateBox("CapsuleMur_E", new Vector3(c.x + 2.9f, 1.5f, c.z), new Vector3(0.2f, 3, 5), new Color(0.3f, 0.45f, 0.35f)).transform.SetParent(parent.transform);
+            CreateBox("CapsuleMur_O", new Vector3(c.x - 2.9f, 1.5f, c.z), new Vector3(0.2f, 3, 5), new Color(0.3f, 0.45f, 0.35f)).transform.SetParent(parent.transform);
+            CreateBox("CapsuleToit", new Vector3(c.x, 3.05f, c.z), new Vector3(6, 0.1f, 5), new Color(0.25f, 0.4f, 0.3f)).transform.SetParent(parent.transform);
+
+            // Le bouton rouge, bien visible au fond.
+            CreateBox("BoutonRouge", new Vector3(c.x, 1.2f, c.z + 2.2f), new Vector3(0.4f, 0.4f, 0.15f), Color.red).transform.SetParent(parent.transform);
+
+            // Barrière d'entrée : visible tant que la capsule n'est pas "arrivée"
+            // (RoundManager la masque en phase Extraction).
+            var barrier = CreateBox("CapsuleBarrier", new Vector3(c.x, 1.5f, c.z - 2.4f), new Vector3(6, 3, 0.25f), new Color(0.8f, 0.2f, 0.2f));
+            barrier.transform.SetParent(parent.transform);
         }
 
         /// <summary>Le Terminal central : kiosque + écran public des dépôts.</summary>
@@ -231,6 +255,7 @@ namespace BadFaith.EditorTools
 
             root.AddComponent<NetworkObject>();
             root.AddComponent<NetworkTransform>(); // _clientAuthoritative = true par défaut : le propriétaire pilote
+            root.AddComponent<PlayerHealth>();
 
             var motor = root.AddComponent<PlayerMotor>();
             var motorSo = new SerializedObject(motor);
