@@ -14,8 +14,9 @@ Jeu multijoueur 4-8 joueurs de trahison sociale à déni plausible (Unity 6, Fis
 - La viralité (GoPro/replay/auto-clips) est une feature, pas du polish de fin.
 
 ## Architecture code
-- `game-src/Core/` — logique de domaine en C# PUR (aucun using UnityEngine) : testable hors Unity, copiée/liée dans le projet Unity sous `Assets/Scripts/Core/`. Toute règle de gameplay (économie, pactes, scoring, accidents) vit ici.
-- `game/` — le projet Unity 6 URP (créé en Phase 0). Les MonoBehaviours/NetworkBehaviours sont des adaptateurs fins autour de Core.
+- `game/` — le projet Unity 6 URP (Unity 6000.5.2f1, éditeur installé sous D:\Unity\Editors).
+- `game/Assets/Scripts/Core/` — logique de domaine en C# PUR (aucun using UnityEngine) : toute règle de gameplay (économie, pactes, scoring, accidents) vit ici. Les MonoBehaviours/NetworkBehaviours sont des adaptateurs fins autour de Core et vivent ailleurs dans Scripts/.
+- `game/Assets/FishNet/` — copie vendorée de FishNet (netcode). Ne pas modifier ces fichiers.
 - Réseau : autorité hôte stricte (FishNet). Les clients n'exécutent jamais de logique de domaine.
 - L'aléatoire de gameplay passe TOUJOURS par une interface injectable (IGameRandom) — indispensable pour tester le Directeur d'Accidents.
 
