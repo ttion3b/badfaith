@@ -1,0 +1,72 @@
+{
+  "README.md": {
+    "mtime": 1783073966.4257014,
+    "ast_hash": "59f18f122ee25dfc53ec66f51bf13882",
+    "semantic_hash": "59f18f122ee25dfc53ec66f51bf13882"
+  },
+  "docs/gdd/00-vision.md": {
+    "mtime": 1783073687.632118,
+    "ast_hash": "87146c5484ab5264a217f26f43011be0",
+    "semantic_hash": "87146c5484ab5264a217f26f43011be0"
+  },
+  "docs/gdd/01-core-loop.md": {
+    "mtime": 1783073702.9195428,
+    "ast_hash": "ec70f2f487bf52be2d3a4b9110ddb954",
+    "semantic_hash": "ec70f2f487bf52be2d3a4b9110ddb954"
+  },
+  "docs/gdd/02-economie.md": {
+    "mtime": 1783073728.1133,
+    "ast_hash": "1e101c1f44461394bf33776abc248987",
+    "semantic_hash": "1e101c1f44461394bf33776abc248987"
+  },
+  "docs/gdd/03-pactes.md": {
+    "mtime": 1783073751.0205429,
+    "ast_hash": "2464522f77469c1baa3e97bafb2eeb61",
+    "semantic_hash": "2464522f77469c1baa3e97bafb2eeb61"
+  },
+  "docs/gdd/04-deni-plausible.md": {
+    "mtime": 1783073775.9745195,
+    "ast_hash": "444d81a9febdff5322edad1cc0300949",
+    "semantic_hash": "444d81a9febdff5322edad1cc0300949"
+  },
+  "docs/gdd/05-le-juge.md": {
+    "mtime": 1783073788.3752184,
+    "ast_hash": "74899072a07d7e18594de3da40ef2cd4",
+    "semantic_hash": "74899072a07d7e18594de3da40ef2cd4"
+  },
+  "docs/gdd/06-extraction.md": {
+    "mtime": 1783073808.5779016,
+    "ast_hash": "60be1db8a5fe2473efbbe372eeab8b7c",
+    "semantic_hash": "60be1db8a5fe2473efbbe372eeab8b7c"
+  },
+  "docs/gdd/07-tribunal.md": {
+    "mtime": 1783073841.394538,
+    "ast_hash": "603b1cc14ae768c8700b0edb23f1ddea",
+    "semantic_hash": "603b1cc14ae768c8700b0edb23f1ddea"
+  },
+  "docs/gdd/08-viralite.md": {
+    "mtime": 1783073874.7768567,
+    "ast_hash": "01970623e02a1a1bfb58f5be2476f86f",
+    "semantic_hash": "01970623e02a1a1bfb58f5be2476f86f"
+  },
+  "docs/gdd/09-tech.md": {
+    "mtime": 1783073896.0382,
+    "ast_hash": "7364bd496d9e8adf13bf0ba3e2b41e3a",
+    "semantic_hash": "7364bd496d9e8adf13bf0ba3e2b41e3a"
+  },
+  "docs/gdd/10-roadmap.md": {
+    "mtime": 1783073927.3338387,
+    "ast_hash": "4037648244da273ae3c317db1692abca",
+    "semantic_hash": "4037648244da273ae3c317db1692abca"
+  },
+  "docs/gdd/11-risques.md": {
+    "mtime": 1783073946.3648715,
+    "ast_hash": "dd3125284079fb9765cb41c108c759bb",
+    "semantic_hash": "dd3125284079fb9765cb41c108c759bb"
+  },
+  "docs/gdd/99-backlog.md": {
+    "mtime": 1783073961.049998,
+    "ast_hash": "50316578aefb606e3d19aa640ba4b7ee",
+    "semantic_hash": "50316578aefb606e3d19aa640ba4b7ee"
+  }
+}

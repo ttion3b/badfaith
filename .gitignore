@@ -1,0 +1,30 @@
+# Unity (s'applique au futur dossier game/)
+game/[Ll]ibrary/
+game/[Tt]emp/
+game/[Oo]bj/
+game/[Bb]uild/
+game/[Bb]uilds/
+game/[Ll]ogs/
+game/[Uu]serSettings/
+game/[Mm]emoryCaptures/
+*.csproj
+*.sln
+*.suo
+*.user
+*.pidb
+*.booproj
+*.tmp
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.vs/
+.idea/
+.vscode/
+
+# graphify : on versionne graph.json + rapport, pas les fichiers de travail
+graphify-out/.graphify_*
+graphify-out/graph.html
