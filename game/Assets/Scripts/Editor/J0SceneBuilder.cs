@@ -33,16 +33,34 @@ namespace BadFaith.EditorTools
             System.IO.Directory.CreateDirectory("Assets/Prefabs");
             System.IO.Directory.CreateDirectory("Assets/Scenes");
 
-            GameObject playerPrefab = BuildPlayerPrefab();
-            GameObject cubePrefab = BuildCubePrefab();
+            /* Sauvegardes de prefabs groupées : sans ça, FishNet re-hashe la
+             * collection à CHAQUE SaveAsPrefabAsset et hurle "same assetPath
+             * hash of 0" entre les deux sauvegardes (état transitoire). Groupé,
+             * son postprocess ne tourne qu'une fois, après StopAssetEditing. */
+            AssetDatabase.StartAssetEditing();
+            try
+            {
+                BuildPlayerPrefab();
+                BuildCubePrefab();
+            }
+            finally
+            {
+                AssetDatabase.StopAssetEditing();
+            }
 
-            // Régénère DefaultPrefabObjects (AssetPathHash inclus) maintenant que
-            // les prefabs réseau existent. Le Generator FishNet est internal :
-            // on passe par son menu, API publique stable.
-            // NB : une erreur "same assetPath hash of 0" peut apparaître PENDANT la
-            // sauvegarde des prefabs ci-dessus — état transitoire, corrigé ici.
+            // Régénère DefaultPrefabObjects (AssetPathHash inclus). Le Generator
+            // FishNet est internal : on passe par son menu, API publique stable.
             EditorApplication.ExecuteMenuItem("Tools/Fish-Networking/Utility/Refresh Default Prefabs");
-            Debug.Log("[J0SceneBuilder] Collection de prefabs régénérée — une éventuelle erreur de hash pendant la construction est transitoire et désormais résolue.");
+
+            // Recharge les assets après l'import groupé (les références retournées
+            // pendant StartAssetEditing ne sont pas fiables).
+            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            GameObject cubePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CubePrefabPath);
+            if (playerPrefab == null || cubePrefab == null)
+            {
+                Debug.LogError("[J0SceneBuilder] Prefabs introuvables après import — relance la construction.");
+                return;
+            }
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -181,7 +199,7 @@ namespace BadFaith.EditorTools
             kiosk.AddComponent<DepositTerminal>(); // trouve ses écrans (TextMesh enfants) tout seul
         }
 
-        private static GameObject BuildPlayerPrefab()
+        private static void BuildPlayerPrefab()
         {
             var root = new GameObject("Player");
 
@@ -238,12 +256,11 @@ namespace BadFaith.EditorTools
             watchSo.FindProperty("_wristIndicator").objectReferenceValue = wrist.GetComponent<Renderer>();
             watchSo.ApplyModifiedPropertiesWithoutUndo();
 
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
+            PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             Object.DestroyImmediate(root);
-            return prefab;
         }
 
-        private static GameObject BuildCubePrefab()
+        private static void BuildCubePrefab()
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = "GrabCube";
@@ -263,9 +280,8 @@ namespace BadFaith.EditorTools
             go.AddComponent<NetworkGrabbable>();
             go.AddComponent<LootItem>();
 
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, CubePrefabPath);
+            PrefabUtility.SaveAsPrefabAsset(go, CubePrefabPath);
             Object.DestroyImmediate(go);
-            return prefab;
         }
 
         private static void ScatterCubes(GameObject cubePrefab)
