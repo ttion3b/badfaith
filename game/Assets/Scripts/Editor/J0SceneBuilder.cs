@@ -2,8 +2,8 @@ using BadFaith.Gameplay;
 using BadFaith.UI;
 using FishNet.Component.Spawning;
 using FishNet.Component.Transforming;
-using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Managing;
+using FishNet.Managing.Object;
 using FishNet.Object;
 using FishNet.Transporting.Tugboat;
 using UnityEditor;
@@ -37,8 +37,9 @@ namespace BadFaith.EditorTools
             GameObject cubePrefab = BuildCubePrefab();
 
             // Régénère DefaultPrefabObjects (AssetPathHash inclus) maintenant que
-            // les prefabs réseau existent — équivalent du menu Refresh Default Prefabs.
-            Generator.GenerateFull(null, true);
+            // les prefabs réseau existent. Le Generator FishNet est internal :
+            // on passe par son menu, API publique stable.
+            EditorApplication.ExecuteMenuItem("Tools/Fish-Networking/Utility/Refresh Default Prefabs");
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -111,8 +112,13 @@ namespace BadFaith.EditorTools
 
             // Assigne explicitement la collection de prefabs spawnables : l'auto-détection
             // de FishNet ne se déclenche pas sur un NetworkManager créé par AddComponent.
+            var prefabCollection = AssetDatabase.LoadAssetAtPath<PrefabObjects>("Assets/DefaultPrefabObjects.asset");
+            if (prefabCollection == null)
+            {
+                Debug.LogError("[J0SceneBuilder] DefaultPrefabObjects.asset introuvable — lance Tools > Fish-Networking > Utility > Refresh Default Prefabs puis reconstruis la scène.");
+            }
             var nmSo = new SerializedObject(nm);
-            nmSo.FindProperty("_spawnablePrefabs").objectReferenceValue = Generator.GetDefaultPrefabObjects();
+            nmSo.FindProperty("_spawnablePrefabs").objectReferenceValue = prefabCollection;
             nmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var spawner = go.AddComponent<PlayerSpawner>();
