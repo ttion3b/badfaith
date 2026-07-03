@@ -12,7 +12,7 @@ namespace FishNet.Serializing.Helping
 
         public override int GetHashCode(Scene obj)
         {
-            return obj.handle.GetRawData();
+            return obj.handle.GetRawData().GetHashCode();
         }
     }
 }

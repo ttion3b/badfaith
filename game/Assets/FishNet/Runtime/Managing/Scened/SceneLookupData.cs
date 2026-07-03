@@ -89,7 +89,7 @@ namespace FishNet.Managing.Scened
         /// <param name = "scene">Scene to generate from.</param>
         public SceneLookupData(Scene scene)
         {
-            Handle = scene.handle.GetRawData();
+            Handle = (int)scene.handle.GetRawData();
             Name = scene.name;
         }
 

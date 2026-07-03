@@ -155,10 +155,11 @@ namespace FishNet.Observing
                 foreach (ObserverCondition item in _observerConditions)
                 {
                     item.Deinitialize(destroyed);
-                    /* Use GetInstanceId to ensure the object is actually
-                     * instantiated. If Id is negative, then it's instantiated
-                     * and not a reference to the original object. */
-                    if (destroyed && (int)item.GetEntityId() < 0)
+                    /* Toutes les entrees de _observerConditions sont des copies
+                     * Instantiate() une fois _conditionsInitializedPreviously vrai
+                     * (voir Initialize) : on peut detruire sans verifier l'id
+                     * d'instance, dont la conversion int est obsolete en Unity 6000.5. */
+                    if (destroyed)
                         Destroy(item);
                 }
 
