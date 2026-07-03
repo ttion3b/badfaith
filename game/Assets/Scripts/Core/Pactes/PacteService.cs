@@ -29,20 +29,29 @@ namespace BadFaith.Core.Pactes
     {
         private readonly GameRules _rules;
         private readonly IGameRandom _rng;
+        private readonly IReadOnlyList<PacteDefinition> _catalog;
         private readonly List<PacteOffer> _offers = new List<PacteOffer>();
         private readonly Dictionary<int, float> _nextOfferTime = new Dictionary<int, float>();
         private readonly Dictionary<int, int> _consecutiveTargetCount = new Dictionary<int, int>();
         private int _lastTargetedPlayer = -1;
         private int _nextOfferId = 1;
 
-        public PacteService(GameRules rules, IGameRandom rng) { _rules = rules; _rng = rng; }
+        /// <param name="catalog">Sous-ensemble du catalogue à distribuer (null = catalogue complet).
+        /// Permet au prototype de ne proposer que les Pactes dont la conséquence est implémentée.</param>
+        public PacteService(GameRules rules, IGameRandom rng, IReadOnlyList<PacteDefinition> catalog = null)
+        {
+            _rules = rules;
+            _rng = rng;
+            _catalog = catalog ?? PacteDefinition.Catalog;
+        }
 
         public IReadOnlyList<PacteOffer> Offers => _offers;
 
         public void RegisterPlayer(int playerId, float now)
         {
             // Première offre décalée aléatoirement pour désynchroniser les montres.
-            _nextOfferTime[playerId] = now + _rng.Range(60f, _rules.PacteOfferInterval);
+            float minDelay = System.Math.Min(60f, _rules.PacteOfferInterval * 0.5f);
+            _nextOfferTime[playerId] = now + _rng.Range(minDelay, _rules.PacteOfferInterval);
         }
 
         /// <summary>À appeler chaque tick hôte. Retourne les nouvelles offres à pousser sur les montres.</summary>
@@ -80,7 +89,7 @@ namespace BadFaith.Core.Pactes
         private PacteDefinition Draw(int forPlayerId)
         {
             var pendingIds = _offers.Where(o => o.State == PacteOfferState.Pending).Select(o => o.PacteId).ToHashSet();
-            var pool = PacteDefinition.Catalog.Where(d => !pendingIds.Contains(d.Id)).ToList();
+            var pool = _catalog.Where(d => !pendingIds.Contains(d.Id)).ToList();
             if (pool.Count == 0) return null;
 
             float total = pool.Sum(d => d.DrawWeight);

@@ -46,6 +46,7 @@ namespace BadFaith.EditorTools
             BuildArena();
             Transform[] spawns = BuildSpawnPoints();
             BuildNetworkManager(playerPrefab, spawns);
+            BuildGameServices();
             ScatterCubes(cubePrefab);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -128,6 +129,15 @@ namespace BadFaith.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>Objet réseau de scène portant les services de gameplay côté hôte (Pactes, accidents).</summary>
+        private static void BuildGameServices()
+        {
+            var go = new GameObject("GameServices");
+            go.AddComponent<NetworkObject>();
+            go.AddComponent<HazardExecutor>();
+            go.AddComponent<PacteNetworkService>();
+        }
+
         private static GameObject BuildPlayerPrefab()
         {
             var root = new GameObject("Player");
@@ -171,6 +181,19 @@ namespace BadFaith.EditorTools
             grabberSo.FindProperty("_cameraHolder").objectReferenceValue = cameraHolder;
             grabberSo.FindProperty("_holdAnchor").objectReferenceValue = holdAnchor;
             grabberSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // La Montre : indicateur de poignet visible par tous (le tell social du GDD).
+            var wrist = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wrist.name = "WristWatch";
+            Object.DestroyImmediate(wrist.GetComponent<BoxCollider>());
+            wrist.transform.SetParent(root.transform);
+            wrist.transform.localPosition = new Vector3(0.42f, -0.15f, 0.45f);
+            wrist.transform.localScale = new Vector3(0.14f, 0.1f, 0.14f);
+
+            var watch = root.AddComponent<PlayerWatch>();
+            var watchSo = new SerializedObject(watch);
+            watchSo.FindProperty("_wristIndicator").objectReferenceValue = wrist.GetComponent<Renderer>();
+            watchSo.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             Object.DestroyImmediate(root);
