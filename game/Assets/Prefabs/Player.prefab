@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8135007841161709567}
   - component: {fileID: 8835571997814292058}
   - component: {fileID: 1725059101454500066}
+  - component: {fileID: 1853703714554336611}
   - component: {fileID: 7411119352145141351}
   - component: {fileID: 7377130020676378517}
   - component: {fileID: 1167820251313795781}
@@ -168,6 +169,21 @@ MonoBehaviour:
     X: 0
     Y: 0
     Z: 0
+--- !u!114 &1853703714554336611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 706163984573038989}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbd048460d7f9f6479d0dc8edd0ab7e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BadFaith.Gameplay.PlayerHealth
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 8835571997814292058}
+  _networkObjectCache: {fileID: 0}
 --- !u!114 &7411119352145141351
 MonoBehaviour:
   m_ObjectHideFlags: 0

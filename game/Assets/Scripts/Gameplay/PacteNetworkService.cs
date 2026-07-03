@@ -28,8 +28,11 @@ namespace BadFaith.Gameplay
         private AccidentDirector _accidents;
         private HazardExecutor _executor;
         private readonly Dictionary<int, PlayerWatch> _watches = new Dictionary<int, PlayerWatch>();
-        /// <summary>Journal complet de la manche — la matière première du futur Tribunal.</summary>
+        /// <summary>Journal complet de la manche — la matière première du Tribunal.</summary>
         private readonly List<HazardEvent> _log = new List<HazardEvent>();
+
+        /// <summary>Serveur : accès du Tribunal au journal.</summary>
+        public IReadOnlyList<HazardEvent> ServerLog => _log;
 
         private void Awake()
         {

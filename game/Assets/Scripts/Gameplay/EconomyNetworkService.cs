@@ -82,6 +82,16 @@ namespace BadFaith.Gameplay
                 MirrorPocket(id);
         }
 
+        /// <summary>Serveur : le grand livre, pour le scoring du Tribunal.</summary>
+        public EconomyLedger ServerLedger => _ledger;
+
+        /// <summary>Serveur : rafraîchit toutes les montres (après les deltas du Tribunal).</summary>
+        public void ServerMirrorAllPockets()
+        {
+            foreach (var id in _watches.Keys)
+                MirrorPocket(id);
+        }
+
         /// <summary>Serveur : vainqueur = l'extrait le plus riche (-1 si aucun).</summary>
         public int ServerWinner(System.Collections.Generic.IReadOnlyCollection<int> extractedPlayers)
             => _ledger.Winner(extractedPlayers.ToList());

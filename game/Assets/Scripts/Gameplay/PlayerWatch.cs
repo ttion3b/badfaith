@@ -81,6 +81,16 @@ namespace BadFaith.Gameplay
             TargetAcceptResult(Owner, offerId, ok);
         }
 
+        /// <summary>Client propriétaire : vote au Tribunal (-1 = accident naturel).</summary>
+        public void SendTribunalVote(int suspectId) => RpcTribunalVote(suspectId);
+
+        [ServerRpc]
+        private void RpcTribunalVote(int suspectId)
+        {
+            if (TribunalNetworkService.Instance != null)
+                TribunalNetworkService.Instance.ServerCastVote(OwnerId, suspectId);
+        }
+
         // ==================== CLIENT ====================
 
         [TargetRpc]

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace BadFaith.Gameplay
 {
-    public enum RoundPhase : byte { Expedition, Extraction, Ended }
+    public enum RoundPhase : byte { Expedition, Extraction, Tribunal, Ended }
 
     /// <summary>
     /// La manche (docs/gdd/01-core-loop.md + 06-extraction.md) :
@@ -44,6 +44,8 @@ namespace BadFaith.Gameplay
         private float _extractionStartTime;
         private Coroutine _countdownRoutine;
         private GameObject _barrier;
+        private List<int> _finalExtracted = new List<int>();
+        private string _endReason = string.Empty;
 
         public RoundPhase Phase => _phase.Value;
 
@@ -184,18 +186,37 @@ namespace BadFaith.Gameplay
 
         private void ServerEndRound(List<int> extracted, string reason)
         {
-            if (_phase.Value == RoundPhase.Ended)
+            if (_phase.Value == RoundPhase.Ended || _phase.Value == RoundPhase.Tribunal)
                 return;
-            _phase.Value = RoundPhase.Ended;
             if (_countdownRoutine != null)
                 StopCoroutine(_countdownRoutine);
             _launchCountdown.Value = -1f;
+            _finalExtracted = extracted;
+            _endReason = reason;
 
-            int winner = EconomyNetworkService.Instance.ServerWinner(extracted);
-            var lines = new List<string> { reason, string.Empty };
+            // Le Tribunal d'abord : le vainqueur se calcule APRÈS les primes de
+            // mauvaise foi et les amendes (le mensonge est scoré, pilier 2).
+            var tribunal = TribunalNetworkService.Instance;
+            if (tribunal != null && tribunal.ServerHasIncidents)
+            {
+                _phase.Value = RoundPhase.Tribunal;
+                ServerAnnounce(reason, 5f);
+                tribunal.ServerRunTribunal(ServerShowFinalResults);
+            }
+            else
+            {
+                ServerShowFinalResults();
+            }
+        }
+
+        private void ServerShowFinalResults()
+        {
+            _phase.Value = RoundPhase.Ended;
+            int winner = EconomyNetworkService.Instance.ServerWinner(_finalExtracted);
+            var lines = new List<string> { _endReason, string.Empty };
             foreach (var snapshot in EconomyNetworkService.Instance.ServerSnapshot().OrderByDescending(s => s.pocket))
             {
-                string status = extracted.Contains(snapshot.playerId) ? "EXTRAIT" : _deadPlayers.Contains(snapshot.playerId) ? "MORT" : "ABANDONNÉ";
+                string status = _finalExtracted.Contains(snapshot.playerId) ? "EXTRAIT" : _deadPlayers.Contains(snapshot.playerId) ? "MORT" : "ABANDONNÉ";
                 string crown = snapshot.playerId == winner ? "  <<< VAINQUEUR" : string.Empty;
                 lines.Add($"Joueur {snapshot.playerId} — {snapshot.pocket} $ — {status}{crown}");
             }
@@ -242,6 +263,7 @@ namespace BadFaith.Gameplay
             {
                 RoundPhase.Expedition => $"EXPÉDITION — {_secondsLeft.Value / 60}:{_secondsLeft.Value % 60:00}",
                 RoundPhase.Extraction => $"EXTRACTION — {_secondsLeft.Value}s — À BORD : {_aboard.Value}/{_seats.Value}",
+                RoundPhase.Tribunal => "LE TRIBUNAL",
                 _ => "MANCHE TERMINÉE",
             };
             GUI.Box(new Rect(Screen.width - 320, 8, 310, 30), phaseText, style);

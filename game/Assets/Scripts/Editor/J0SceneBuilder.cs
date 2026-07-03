@@ -171,6 +171,7 @@ namespace BadFaith.EditorTools
             go.AddComponent<PacteNetworkService>();
             go.AddComponent<EconomyNetworkService>();
             go.AddComponent<RoundManager>();
+            go.AddComponent<TribunalNetworkService>();
         }
 
         /// <summary>La capsule d'extraction, au nord de l'arène. Position/rayon : RoundManager.CapsuleCenter.</summary>
