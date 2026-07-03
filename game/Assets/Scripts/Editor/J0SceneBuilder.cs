@@ -47,6 +47,7 @@ namespace BadFaith.EditorTools
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
             BuildArena();
+            BuildTerminal();
             Transform[] spawns = BuildSpawnPoints();
             BuildNetworkManager(playerPrefab, spawns);
             BuildGameServices();
@@ -142,13 +143,42 @@ namespace BadFaith.EditorTools
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        /// <summary>Objet réseau de scène portant les services de gameplay côté hôte (Pactes, accidents).</summary>
+        /// <summary>Objet réseau de scène portant les services de gameplay côté hôte (Pactes, accidents, économie).</summary>
         private static void BuildGameServices()
         {
             var go = new GameObject("GameServices");
             go.AddComponent<NetworkObject>();
             go.AddComponent<HazardExecutor>();
             go.AddComponent<PacteNetworkService>();
+            go.AddComponent<EconomyNetworkService>();
+        }
+
+        /// <summary>Le Terminal central : kiosque + écran public des dépôts.</summary>
+        private static void BuildTerminal()
+        {
+            var kiosk = CreateBox("Terminal", new Vector3(0, 0.75f, 0), new Vector3(1.4f, 1.5f, 0.7f), new Color(0.15f, 0.2f, 0.3f));
+
+            var screenGo = new GameObject("TerminalScreen");
+            screenGo.transform.SetParent(kiosk.transform);
+            screenGo.transform.position = new Vector3(0, 2.4f, 0);
+            var screen = screenGo.AddComponent<TextMesh>();
+            screen.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            screenGo.GetComponent<MeshRenderer>().material = screen.font.material;
+            screen.fontSize = 56;
+            screen.characterSize = 0.045f;
+            screen.anchor = TextAnchor.MiddleCenter;
+            screen.alignment = TextAlignment.Center;
+            screen.color = new Color(0.4f, 1f, 0.6f);
+            screen.text = "TERMINAL";
+
+            // Deuxième face de l'écran (lisible des deux côtés).
+            var backGo = Object.Instantiate(screenGo, kiosk.transform);
+            backGo.name = "TerminalScreenBack";
+            backGo.transform.position = screenGo.transform.position;
+            backGo.transform.rotation = Quaternion.Euler(0, 180, 0);
+
+            kiosk.AddComponent<NetworkObject>();
+            kiosk.AddComponent<DepositTerminal>(); // trouve ses écrans (TextMesh enfants) tout seul
         }
 
         private static GameObject BuildPlayerPrefab()
@@ -231,6 +261,7 @@ namespace BadFaith.EditorTools
             ntSo.ApplyModifiedPropertiesWithoutUndo();
 
             go.AddComponent<NetworkGrabbable>();
+            go.AddComponent<LootItem>();
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, CubePrefabPath);
             Object.DestroyImmediate(go);

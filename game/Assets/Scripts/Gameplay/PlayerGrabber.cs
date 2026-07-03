@@ -1,12 +1,14 @@
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace BadFaith.Gameplay
 {
     /// <summary>
-    /// Ramasser (E), lâcher (E), lancer (clic gauche). Le propriétaire vise,
-    /// le serveur valide et exécute — première brique de l'autorité hôte du GDD.
+    /// Ramasser (E), lâcher (E), lancer (clic gauche), déposer au Terminal
+    /// (G : pot commun, H : poche perso). Le propriétaire vise, le serveur
+    /// valide et exécute — autorité hôte du GDD.
     /// </summary>
     public class PlayerGrabber : NetworkBehaviour
     {
@@ -17,6 +19,12 @@ namespace BadFaith.Gameplay
 
         /// <summary>Objet actuellement porté (référence côté serveur uniquement).</summary>
         private NetworkGrabbable _serverHeld;
+        /// <summary>Public : porter un objet se voit (et pilote les prompts du porteur).</summary>
+        private readonly SyncVar<bool> _isHolding = new SyncVar<bool>();
+
+        private bool NearTerminal =>
+            DepositTerminal.Instance != null &&
+            Vector3.Distance(transform.position, DepositTerminal.Instance.transform.position) <= DepositTerminal.Instance.DepositRange;
 
         private void Update()
         {
@@ -33,6 +41,45 @@ namespace BadFaith.Gameplay
 
             if (mouse.leftButton.wasPressedThisFrame)
                 RpcThrow(_cameraHolder.forward);
+
+            if (_isHolding.Value && NearTerminal)
+            {
+                if (kb.gKey.wasPressedThisFrame)
+                    RpcDeposit(true);
+                if (kb.hKey.wasPressedThisFrame)
+                    RpcDeposit(false);
+            }
+        }
+
+        private void OnGUI()
+        {
+            if (!IsOwner || !_isHolding.Value || !NearTerminal)
+                return;
+            var style = new GUIStyle(GUI.skin.box) { fontSize = 14, alignment = TextAnchor.MiddleCenter };
+            GUI.Box(new Rect(Screen.width / 2f - 170, Screen.height - 70, 340, 46),
+                "DEPOSER : G -> POT COMMUN  ·  H -> POCHE PERSO\n(le Terminal affiche ton depot a tous)", style);
+        }
+
+        [ServerRpc]
+        private void RpcDeposit(bool toCommonPot)
+        {
+            if (_serverHeld == null || DepositTerminal.Instance == null)
+                return;
+            if (Vector3.Distance(transform.position, DepositTerminal.Instance.transform.position) > DepositTerminal.Instance.DepositRange + 1f)
+                return;
+            var loot = _serverHeld.GetComponent<LootItem>();
+            if (loot == null)
+                return;
+
+            var held = _serverHeld;
+            _serverHeld = null;
+            _isHolding.Value = false;
+            DepositTerminal.Instance.ServerDeposit(
+                OwnerId,
+                $"Joueur {OwnerId}",
+                loot,
+                toCommonPot ? BadFaith.Core.Economy.DepositDestination.CommonPot : BadFaith.Core.Economy.DepositDestination.PersonalPocket);
+            held.NetworkObject.Despawn();
         }
 
         [ServerRpc]
@@ -42,6 +89,7 @@ namespace BadFaith.Gameplay
             {
                 _serverHeld.ServerRelease(Vector3.zero);
                 _serverHeld = null;
+                _isHolding.Value = false;
                 return;
             }
 
@@ -55,6 +103,7 @@ namespace BadFaith.Gameplay
 
             grabbable.ServerGrab(_holdAnchor);
             _serverHeld = grabbable;
+            _isHolding.Value = true;
         }
 
         [ServerRpc]
@@ -65,6 +114,7 @@ namespace BadFaith.Gameplay
 
             _serverHeld.ServerRelease(eyeForward.normalized * _throwForce);
             _serverHeld = null;
+            _isHolding.Value = false;
         }
     }
 }

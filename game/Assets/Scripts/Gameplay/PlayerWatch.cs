@@ -61,8 +61,8 @@ namespace BadFaith.Gameplay
 
         // ==================== SERVEUR ====================
 
-        /// <summary>Serveur : crédite/débite la poche perso.</summary>
-        public void ServerCredit(int amount) => _pocket.Value += amount;
+        /// <summary>Serveur : miroir de la poche perso tenue par l'EconomyLedger (source de vérité).</summary>
+        public void ServerSetPocket(int value) => _pocket.Value = value;
 
         /// <summary>Serveur : pousse une offre sur cette montre.</summary>
         public void ServerSendOffer(int offerId, string title, int reward, float expirySeconds)

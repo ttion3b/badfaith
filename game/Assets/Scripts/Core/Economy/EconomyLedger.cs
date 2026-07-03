@@ -28,6 +28,14 @@ namespace BadFaith.Core.Economy
             foreach (var id in ids) _pockets[id] = 0;
         }
 
+        /// <summary>Enregistre un joueur arrivé en cours de lobby : le quota grandit avec l'équipe.</summary>
+        public void RegisterPlayer(int playerId)
+        {
+            if (_pockets.ContainsKey(playerId)) return;
+            _pockets[playerId] = 0;
+            Quota += _rules.QuotaPerPlayer;
+        }
+
         public int PocketOf(int playerId) => _pockets.GetValueOrDefault(playerId);
         public bool IsDead(int playerId) => _dead.Contains(playerId);
         public bool QuotaReached => CommonPot >= Quota;

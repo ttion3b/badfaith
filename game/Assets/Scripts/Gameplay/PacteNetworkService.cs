@@ -133,7 +133,7 @@ namespace BadFaith.Gameplay
             if (!_pactes.Accept(offerId, Time.time, targetZoneId: zone))
                 return false;
 
-            watch.ServerCredit(def.Reward);
+            EconomyNetworkService.Instance.ServerCredit(watch.OwnerId, def.Reward);
             if (def.Consequence != null)
                 _accidents.OnPacteAccepted(def.Consequence, Time.time);
             return true;
