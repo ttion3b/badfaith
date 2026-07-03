@@ -2,6 +2,7 @@ using BadFaith.Gameplay;
 using BadFaith.UI;
 using FishNet.Component.Spawning;
 using FishNet.Component.Transforming;
+using FishNet.Editing.PrefabCollectionGenerator;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Transporting.Tugboat;
@@ -34,6 +35,10 @@ namespace BadFaith.EditorTools
 
             GameObject playerPrefab = BuildPlayerPrefab();
             GameObject cubePrefab = BuildCubePrefab();
+
+            // Régénère DefaultPrefabObjects (AssetPathHash inclus) maintenant que
+            // les prefabs réseau existent — équivalent du menu Refresh Default Prefabs.
+            Generator.GenerateFull(null, true);
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -100,9 +105,15 @@ namespace BadFaith.EditorTools
         private static void BuildNetworkManager(GameObject playerPrefab, Transform[] spawns)
         {
             var go = new GameObject("NetworkManager");
-            go.AddComponent<NetworkManager>();
+            var nm = go.AddComponent<NetworkManager>();
             go.AddComponent<Tugboat>(); // TransportManager le détecte automatiquement sur le même GameObject.
             go.AddComponent<NetworkLauncherHUD>();
+
+            // Assigne explicitement la collection de prefabs spawnables : l'auto-détection
+            // de FishNet ne se déclenche pas sur un NetworkManager créé par AddComponent.
+            var nmSo = new SerializedObject(nm);
+            nmSo.FindProperty("_spawnablePrefabs").objectReferenceValue = Generator.GetDefaultPrefabObjects();
+            nmSo.ApplyModifiedPropertiesWithoutUndo();
 
             var spawner = go.AddComponent<PlayerSpawner>();
             spawner.Spawns = spawns;
