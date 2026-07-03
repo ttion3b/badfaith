@@ -39,7 +39,10 @@ namespace BadFaith.EditorTools
             // Régénère DefaultPrefabObjects (AssetPathHash inclus) maintenant que
             // les prefabs réseau existent. Le Generator FishNet est internal :
             // on passe par son menu, API publique stable.
+            // NB : une erreur "same assetPath hash of 0" peut apparaître PENDANT la
+            // sauvegarde des prefabs ci-dessus — état transitoire, corrigé ici.
             EditorApplication.ExecuteMenuItem("Tools/Fish-Networking/Utility/Refresh Default Prefabs");
+            Debug.Log("[J0SceneBuilder] Collection de prefabs régénérée — une éventuelle erreur de hash pendant la construction est transitoire et désormais résolue.");
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
