@@ -415,7 +415,7 @@ namespace FishNet.Managing.Server
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene s = SceneManager.GetSceneAt(i);
-                if (ddolLoaded && s.handle == ddolScene.handle)
+                if (ddolLoaded && s.handle.GetRawData() == ddolScene.handle.GetRawData())
                     trySetupDdol = false;
 
                 SetupSceneObjects(s);
@@ -605,7 +605,7 @@ namespace FishNet.Managing.Server
             {
                 if (networkObject.transform.parent != null)
                 {
-                    NetworkManager.LogError($"{networkObject.name} cannot be moved to scene name {scene.name}, handle {scene.handle} because {networkObject.name} is not root and only root objects may be moved.");
+                    NetworkManager.LogError($"{networkObject.name} cannot be moved to scene name {scene.name}, handle {scene.handle.GetRawData()} because {networkObject.name} is not root and only root objects may be moved.");
                     return;
                 }
                 else

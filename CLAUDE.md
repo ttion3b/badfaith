@@ -16,7 +16,7 @@ Jeu multijoueur 4-8 joueurs de trahison sociale à déni plausible (Unity 6, Fis
 ## Architecture code
 - `game/` — le projet Unity 6 URP (Unity 6000.5.2f1, éditeur installé sous D:\Unity\Editors).
 - `game/Assets/Scripts/Core/` — logique de domaine en C# PUR (aucun using UnityEngine) : toute règle de gameplay (économie, pactes, scoring, accidents) vit ici. Les MonoBehaviours/NetworkBehaviours sont des adaptateurs fins autour de Core et vivent ailleurs dans Scripts/.
-- `game/Assets/FishNet/` — copie vendorée de FishNet (netcode). Ne pas modifier ces fichiers.
+- `game/Assets/FishNet/` — copie vendorée de FishNet (netcode). Ne pas modifier ces fichiers, à UNE exception documentée : patch de compatibilité Unity 6000.5 (`Scene.handle` → `.GetRawData()`, 18 sites, commit "fix: compat FishNet / Unity 6000.5"). Si on met à jour FishNet, vérifier que l'upstream a intégré ce fix avant d'écraser.
 - Réseau : autorité hôte stricte (FishNet). Les clients n'exécutent jamais de logique de domaine.
 - L'aléatoire de gameplay passe TOUJOURS par une interface injectable (IGameRandom) — indispensable pour tester le Directeur d'Accidents.
 

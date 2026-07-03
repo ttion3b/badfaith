@@ -204,7 +204,7 @@ namespace FishNet.Component.ColliderRollback
 			_colliderRollbacksTAA.Add(colliderRollback.transform);
 			_colliderRollbacksSnapshots.ResizeUninitialized(newColliderRollbacksCount);
 			_colliderRollbacksRolledBackMask.Add(0);
-			_colliderRollbacksSceneHandles.Add(colliderRollback.gameObject.scene.handle);
+			_colliderRollbacksSceneHandles.Add(colliderRollback.gameObject.scene.handle.GetRawData());
 			_colliderRollbacksLerpFrames.Add(0);
 			_colliderRollbacksBoundingBoxData.Add(colliderRollback.GetBoundingBoxData());
 
