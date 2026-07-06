@@ -175,6 +175,7 @@ namespace BadFaith.EditorTools
             go.AddComponent<EconomyNetworkService>();
             go.AddComponent<RoundManager>();
             go.AddComponent<TribunalNetworkService>();
+            go.AddComponent<LootRespawner>();
         }
 
         /// <summary>Le Juge : l'unique revolver. Objet de scène, il se téléporte sur un des 5 spots côté serveur.</summary>

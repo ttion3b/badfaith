@@ -55,6 +55,20 @@ namespace BadFaith.Gameplay
         /// <summary>Serveur : appelé par PlayerGrabber quand l'arme change de main (-1 = posée).</summary>
         public void ServerSetHolder(int ownerId) => _holderId.Value = ownerId;
 
+        /// <summary>Serveur : rechargée et redéplacée pour la manche suivante.</summary>
+        public void ServerResetRound()
+        {
+            _loaded.Value = true;
+            _holderId.Value = -1;
+            var rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            transform.position = SpawnSpots[Random.Range(0, SpawnSpots.Length)];
+        }
+
         /// <summary>Serveur : le tir. Une balle, une vie, zéro déni.</summary>
         public void ServerShoot(int shooterId, Vector3 eyePosition, Vector3 direction)
         {

@@ -22,6 +22,12 @@ namespace BadFaith.Gameplay
         public override void OnStartServer()
         {
             base.OnStartServer();
+            ServerReroll();
+        }
+
+        /// <summary>Serveur : nouvelle valeur (spawn et début de manche).</summary>
+        public void ServerReroll()
+        {
             // Arrondi aux 50 $ : lisible à l'oral ("le mille-deux-cents").
             _value.Value = Mathf.RoundToInt(Random.Range(_minValue, _maxValue) / 50f) * 50;
         }

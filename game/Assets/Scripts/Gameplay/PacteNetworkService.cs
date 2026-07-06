@@ -46,7 +46,15 @@ namespace BadFaith.Gameplay
         public override void OnStartServer()
         {
             base.OnStartServer();
+            ServerCreateServices();
 
+            var spawner = FindAnyObjectByType<PlayerSpawner>();
+            if (spawner != null)
+                spawner.OnSpawned += ServerOnPlayerSpawned;
+        }
+
+        private void ServerCreateServices()
+        {
             _rules = new GameRules
             {
                 // Cadence resserrée pour le playtest boîte grise (2-3 min au MVP).
@@ -61,10 +69,15 @@ namespace BadFaith.Gameplay
                 .ToList();
             _pactes = new PacteService(_rules, rng, catalog);
             _accidents = new AccidentDirector(_rules, rng);
+        }
 
-            var spawner = FindAnyObjectByType<PlayerSpawner>();
-            if (spawner != null)
-                spawner.OnSpawned += ServerOnPlayerSpawned;
+        /// <summary>Serveur : services neufs et journal vidé pour la manche suivante.</summary>
+        public void ServerResetRound()
+        {
+            _log.Clear();
+            ServerCreateServices();
+            foreach (var id in _watches.Keys)
+                _pactes.RegisterPlayer(id, Time.time);
         }
 
         private void ServerOnPlayerSpawned(NetworkObject nob)

@@ -31,6 +31,7 @@ namespace BadFaith.Gameplay
         [SerializeField] private float _launchCountdownSeconds = 10f;
 
         private readonly SyncVar<RoundPhase> _phase = new SyncVar<RoundPhase>();
+        private readonly SyncVar<int> _roundNumber = new SyncVar<int>(1);
         private readonly SyncVar<int> _secondsLeft = new SyncVar<int>();
         private readonly SyncVar<int> _seats = new SyncVar<int>();
         private readonly SyncVar<int> _aboard = new SyncVar<int>();
@@ -46,6 +47,8 @@ namespace BadFaith.Gameplay
         private GameObject _barrier;
         private List<int> _finalExtracted = new List<int>();
         private string _endReason = string.Empty;
+        /// <summary>Cumul de session : les extraits encaissent leur poche à chaque manche.</summary>
+        private readonly Dictionary<int, int> _sessionBank = new Dictionary<int, int>();
 
         public RoundPhase Phase => _phase.Value;
 
@@ -80,8 +83,17 @@ namespace BadFaith.Gameplay
         {
             UpdateBarrierVisual();
 
-            if (!IsServerInitialized || _phase.Value == RoundPhase.Ended)
+            if (!IsServerInitialized)
                 return;
+
+            // Manche suivante : l'hôte presse R sur l'écran de fin.
+            if (_phase.Value == RoundPhase.Ended)
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                if (kb != null && kb.rKey.wasPressedThisFrame)
+                    ServerStartNewRound();
+                return;
+            }
 
             _secondsLeft.Value = Mathf.Max(0, Mathf.CeilToInt(_phaseEndTime - Time.time));
 
@@ -216,13 +228,60 @@ namespace BadFaith.Gameplay
             var lines = new List<string> { _endReason, string.Empty };
             foreach (var snapshot in EconomyNetworkService.Instance.ServerSnapshot().OrderByDescending(s => s.pocket))
             {
+                // Les extraits encaissent leur poche dans la banque de session.
+                if (_finalExtracted.Contains(snapshot.playerId))
+                    _sessionBank[snapshot.playerId] = _sessionBank.GetValueOrDefault(snapshot.playerId) + snapshot.pocket;
+                else
+                    _sessionBank.TryAdd(snapshot.playerId, 0);
+
                 string status = _finalExtracted.Contains(snapshot.playerId) ? "EXTRAIT" : _deadPlayers.Contains(snapshot.playerId) ? "MORT" : "ABANDONNÉ";
                 string crown = snapshot.playerId == winner ? "  <<< VAINQUEUR" : string.Empty;
                 lines.Add($"Joueur {snapshot.playerId} — {snapshot.pocket} $ — {status}{crown}");
             }
             if (winner < 0)
                 lines.Add("\nPas de vainqueur. La Direction décline toute responsabilité.");
+
+            lines.Add(string.Empty);
+            lines.Add($"— CLASSEMENT DE SESSION ({_roundNumber.Value} manche{(_roundNumber.Value > 1 ? "s" : "")}) —");
+            foreach (var entry in _sessionBank.OrderByDescending(kv => kv.Value))
+                lines.Add($"Joueur {entry.Key} : {entry.Value} $");
+
             _endResults.Value = string.Join("\n", lines);
+        }
+
+        /// <summary>Serveur (hôte, touche R) : réinitialise tout en place pour la manche suivante.</summary>
+        private void ServerStartNewRound()
+        {
+            // Tout le monde lâche ce qu'il porte.
+            foreach (var grabber in FindObjectsByType<PlayerGrabber>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                grabber.ServerDropHeld();
+
+            EconomyNetworkService.Instance.ServerResetRound();
+            PacteNetworkService.Instance.ServerResetRound();
+            GetComponent<LootRespawner>()?.ServerResetRound();
+            if (TheJudge.Instance != null)
+                TheJudge.Instance.ServerResetRound();
+
+            // Résurrection et replacement de tous les joueurs sur le cercle de spawn.
+            var healths = FindObjectsByType<PlayerHealth>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < healths.Length; i++)
+            {
+                float angle = i * Mathf.PI * 2f / Mathf.Max(1, healths.Length);
+                var pos = new Vector3(Mathf.Cos(angle) * 12f, 1.2f, Mathf.Sin(angle) * 12f);
+                float yaw = Quaternion.LookRotation(new Vector3(-pos.x, 0f, -pos.z)).eulerAngles.y;
+                healths[i].ServerRevive(pos, yaw);
+            }
+
+            _deadPlayers.Clear();
+            _finalExtracted = new List<int>();
+            _endReason = string.Empty;
+            _endResults.Value = string.Empty;
+            _launchCountdown.Value = -1f;
+
+            _roundNumber.Value++;
+            _phase.Value = RoundPhase.Expedition;
+            _phaseEndTime = Time.time + _expeditionSeconds;
+            ServerAnnounce($"MANCHE {_roundNumber.Value} — BONNE CHANCE. OU PAS.", 5f);
         }
 
         public void ServerAnnounce(string message, float seconds)
@@ -261,7 +320,7 @@ namespace BadFaith.Gameplay
             // Phase + timer, en haut à droite.
             string phaseText = _phase.Value switch
             {
-                RoundPhase.Expedition => $"EXPÉDITION — {_secondsLeft.Value / 60}:{_secondsLeft.Value % 60:00}",
+                RoundPhase.Expedition => $"MANCHE {_roundNumber.Value} — EXPÉDITION — {_secondsLeft.Value / 60}:{_secondsLeft.Value % 60:00}",
                 RoundPhase.Extraction => $"EXTRACTION — {_secondsLeft.Value}s — À BORD : {_aboard.Value}/{_seats.Value}",
                 RoundPhase.Tribunal => "LE TRIBUNAL",
                 _ => "MANCHE TERMINÉE",
@@ -286,9 +345,12 @@ namespace BadFaith.Gameplay
             // Écran de fin.
             if (_phase.Value == RoundPhase.Ended && !string.IsNullOrEmpty(_endResults.Value))
             {
-                var endStyle = new GUIStyle(GUI.skin.box) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
-                GUI.Box(new Rect(Screen.width / 2f - 260, Screen.height / 2f - 140, 520, 280),
-                    $"FIN DE MANCHE\n\n{_endResults.Value}\n\n(Quitte le mode Play pour relancer — le multi-manches arrive avec le Tribunal.)", endStyle);
+                string hint = FishNet.InstanceFinder.IsServerStarted
+                    ? "R : MANCHE SUIVANTE"
+                    : "L'hôte peut relancer une manche (R).";
+                var endStyle = new GUIStyle(GUI.skin.box) { fontSize = 15, alignment = TextAnchor.MiddleCenter };
+                GUI.Box(new Rect(Screen.width / 2f - 280, Screen.height / 2f - 180, 560, 360),
+                    $"FIN DE MANCHE {_roundNumber.Value}\n\n{_endResults.Value}\n\n{hint}", endStyle);
             }
 
             // Aide bouton rouge quand on est à bord.

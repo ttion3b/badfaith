@@ -59,6 +59,39 @@ namespace BadFaith.Gameplay
                 cc.enabled = false;
         }
 
+        /// <summary>Serveur : résurrection pour la manche suivante.</summary>
+        public void ServerRevive(Vector3 spawnPosition, float yaw)
+        {
+            _health.Value = 100;
+            _dead.Value = false;
+            RpcOnRevive();
+            TargetTeleport(Owner, spawnPosition, yaw);
+        }
+
+        [ObserversRpc(BufferLast = true)]
+        private void RpcOnRevive()
+        {
+            transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            foreach (var r in GetComponentsInChildren<Renderer>())
+                r.material.color = Color.white; // la montre reprend sa couleur via PlayerWatch.Update
+            var cc = GetComponent<CharacterController>();
+            if (cc != null)
+                cc.enabled = true;
+        }
+
+        [TargetRpc]
+        private void TargetTeleport(FishNet.Connection.NetworkConnection conn, Vector3 position, float yaw)
+        {
+            // Le NetworkTransform du joueur est client-authoritative : seul le
+            // propriétaire peut se téléporter (le CharacterController doit être coupé).
+            var cc = GetComponent<CharacterController>();
+            if (cc != null)
+                cc.enabled = false;
+            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+            if (cc != null)
+                cc.enabled = true;
+        }
+
         private void OnGUI()
         {
             if (!IsOwner)

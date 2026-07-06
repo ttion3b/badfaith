@@ -85,6 +85,15 @@ namespace BadFaith.Gameplay
         /// <summary>Serveur : le grand livre, pour le scoring du Tribunal.</summary>
         public EconomyLedger ServerLedger => _ledger;
 
+        /// <summary>Serveur : grand livre neuf pour la manche suivante.</summary>
+        public void ServerResetRound()
+        {
+            _ledger = new EconomyLedger(_rules, _watches.Keys.ToList());
+            _pot.Value = 0;
+            _quota.Value = _ledger.Quota;
+            ServerMirrorAllPockets();
+        }
+
         /// <summary>Serveur : rafraîchit toutes les montres (après les deltas du Tribunal).</summary>
         public void ServerMirrorAllPockets()
         {
