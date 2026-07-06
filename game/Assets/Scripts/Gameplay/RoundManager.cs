@@ -225,7 +225,7 @@ namespace BadFaith.Gameplay
             _endResults.Value = string.Join("\n", lines);
         }
 
-        private void ServerAnnounce(string message, float seconds)
+        public void ServerAnnounce(string message, float seconds)
         {
             _announcement.Value = message;
             StartCoroutine(ClearAnnouncement(seconds));

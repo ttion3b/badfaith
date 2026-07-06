@@ -67,6 +67,7 @@ namespace BadFaith.EditorTools
             BuildArena();
             BuildTerminal();
             BuildCapsule();
+            BuildJudge();
             Transform[] spawns = BuildSpawnPoints();
             BuildNetworkManager(playerPrefab, spawns);
             BuildGameServices();
@@ -172,6 +173,24 @@ namespace BadFaith.EditorTools
             go.AddComponent<EconomyNetworkService>();
             go.AddComponent<RoundManager>();
             go.AddComponent<TribunalNetworkService>();
+        }
+
+        /// <summary>Le Juge : l'unique revolver. Objet de scène, il se téléporte sur un des 5 spots côté serveur.</summary>
+        private static void BuildJudge()
+        {
+            var gun = CreateBox("TheJudge", new Vector3(0f, 0.6f, -5f), new Vector3(0.14f, 0.2f, 0.55f), new Color(0.05f, 0.05f, 0.06f));
+            var rb = gun.AddComponent<Rigidbody>();
+            rb.mass = 1f;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+
+            gun.AddComponent<NetworkObject>();
+            var nt = gun.AddComponent<NetworkTransform>();
+            var ntSo = new SerializedObject(nt);
+            ntSo.FindProperty("_clientAuthoritative").boolValue = false;
+            ntSo.ApplyModifiedPropertiesWithoutUndo();
+
+            gun.AddComponent<NetworkGrabbable>();
+            gun.AddComponent<TheJudge>();
         }
 
         /// <summary>La capsule d'extraction, au nord de l'arène. Position/rayon : RoundManager.CapsuleCenter.</summary>

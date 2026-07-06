@@ -13,6 +13,7 @@ namespace BadFaith.Core.Hazards
         GasLeak,         // zone toxique
         ElectrifiedFloor,// couloir électrifié
         TerminalDisplayFault, // panne d'affichage du Terminal (déni des dépôts)
+        GunShot,         // le tir du Juge — jamais naturel, jamais déniable (docs/gdd/05-le-juge.md)
     }
 
     public enum HazardOrigin { Natural, Pacte }

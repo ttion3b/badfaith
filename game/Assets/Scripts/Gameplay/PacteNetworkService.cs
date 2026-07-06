@@ -34,6 +34,9 @@ namespace BadFaith.Gameplay
         /// <summary>Serveur : accès du Tribunal au journal.</summary>
         public IReadOnlyList<HazardEvent> ServerLog => _log;
 
+        /// <summary>Serveur : événements externes à journaliser (ex. le tir du Juge).</summary>
+        public void ServerLogEvent(HazardEvent evt) => _log.Add(evt);
+
         private void Awake()
         {
             Instance = this;

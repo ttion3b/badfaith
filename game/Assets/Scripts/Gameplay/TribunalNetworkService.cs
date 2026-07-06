@@ -110,6 +110,13 @@ namespace BadFaith.Gameplay
 
         private static string BuildVerdictText(TribunalVerdict verdict, TribunalIncident incident)
         {
+            // Le tir du Juge : pas de déni possible, le tireur est nommé, point.
+            if (incident.Hazard.Type == HazardType.GunShot)
+            {
+                string target = incident.Hazard.TargetPlayerId >= 0 ? $" sur Joueur {incident.Hazard.TargetPlayerId}" : " (dans le vide)";
+                return $"VERDICT : LE COUP DE FEU{target}.\nTireur : Joueur {verdict.AuthorPlayerId}.\nLe Juge ne se cache pas. Les flairs justes sont récompensés.";
+            }
+
             if (!verdict.WasPacte)
                 return "VERDICT : ACCIDENT NATUREL.\nLa Direction décline toute responsabilité.\nLes accusateurs à tort paient l'amende ; les flairs justes sont récompensés.";
 
@@ -126,6 +133,7 @@ namespace BadFaith.Gameplay
             HazardType.DoorJam => "une porte s'est verrouillée",
             HazardType.RadioJam => "une radio a été brouillée",
             HazardType.ElectrifiedFloor => "un sol s'est électrifié",
+            HazardType.GunShot => "un coup de feu a claqué",
             _ => "un incident s'est produit",
         };
 

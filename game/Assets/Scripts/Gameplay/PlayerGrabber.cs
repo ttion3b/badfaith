@@ -26,14 +26,35 @@ namespace BadFaith.Gameplay
             DepositTerminal.Instance != null &&
             Vector3.Distance(transform.position, DepositTerminal.Instance.transform.position) <= DepositTerminal.Instance.DepositRange;
 
+        /// <summary>Vrai si CE client porte le Juge (pilote les entrées tir/barillet).</summary>
+        private bool HoldingJudge => TheJudge.Instance != null && TheJudge.Instance.HolderId == OwnerId;
+
+        /// <summary>Serveur : change l'objet porté en tenant le Juge informé de son porteur.</summary>
+        private void ServerSetHeld(NetworkGrabbable grabbable)
+        {
+            if (_serverHeld != null)
+            {
+                var oldJudge = _serverHeld.GetComponent<TheJudge>();
+                if (oldJudge != null)
+                    oldJudge.ServerSetHolder(-1);
+            }
+            _serverHeld = grabbable;
+            _isHolding.Value = grabbable != null;
+            if (grabbable != null)
+            {
+                var newJudge = grabbable.GetComponent<TheJudge>();
+                if (newJudge != null)
+                    newJudge.ServerSetHolder(OwnerId);
+            }
+        }
+
         /// <summary>Serveur : lâche l'objet porté (mort, fin de manche).</summary>
         public void ServerDropHeld()
         {
             if (_serverHeld == null)
                 return;
             _serverHeld.ServerRelease(Vector3.zero);
-            _serverHeld = null;
-            _isHolding.Value = false;
+            ServerSetHeld(null);
         }
 
         private void Update()
@@ -54,7 +75,13 @@ namespace BadFaith.Gameplay
                 RpcToggleGrab(_cameraHolder.position, _cameraHolder.forward);
 
             if (mouse.leftButton.wasPressedThisFrame)
-                RpcThrow(_cameraHolder.forward);
+            {
+                // Avec le Juge en main, le clic TIRE (même à vide — le clic s'entend).
+                if (HoldingJudge)
+                    RpcShoot(_cameraHolder.position, _cameraHolder.forward);
+                else
+                    RpcThrow(_cameraHolder.forward);
+            }
 
             if (_isHolding.Value && NearTerminal)
             {
@@ -77,7 +104,18 @@ namespace BadFaith.Gameplay
 
         private void OnGUI()
         {
-            if (!IsOwner || !_isHolding.Value || !NearTerminal)
+            if (!IsOwner)
+                return;
+
+            // Vérification PRIVÉE du barillet : seul le porteur, en tenant R.
+            if (HoldingJudge && Keyboard.current != null && Keyboard.current.rKey.isPressed)
+            {
+                var judgeStyle = new GUIStyle(GUI.skin.box) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+                GUI.Box(new Rect(Screen.width / 2f - 110, Screen.height - 130, 220, 34),
+                    TheJudge.Instance.Loaded ? "BARILLET : CHARGÉ" : "BARILLET : VIDE", judgeStyle);
+            }
+
+            if (!_isHolding.Value || !NearTerminal)
                 return;
             var style = new GUIStyle(GUI.skin.box) { fontSize = 14, alignment = TextAnchor.MiddleCenter };
             GUI.Box(new Rect(Screen.width / 2f - 170, Screen.height - 70, 340, 46),
@@ -96,8 +134,7 @@ namespace BadFaith.Gameplay
                 return;
 
             var held = _serverHeld;
-            _serverHeld = null;
-            _isHolding.Value = false;
+            ServerSetHeld(null);
             DepositTerminal.Instance.ServerDeposit(
                 OwnerId,
                 $"Joueur {OwnerId}",
@@ -112,8 +149,7 @@ namespace BadFaith.Gameplay
             if (_serverHeld != null)
             {
                 _serverHeld.ServerRelease(Vector3.zero);
-                _serverHeld = null;
-                _isHolding.Value = false;
+                ServerSetHeld(null);
                 return;
             }
 
@@ -126,8 +162,7 @@ namespace BadFaith.Gameplay
                 return;
 
             grabbable.ServerGrab(_holdAnchor);
-            _serverHeld = grabbable;
-            _isHolding.Value = true;
+            ServerSetHeld(grabbable);
         }
 
         [ServerRpc]
@@ -137,8 +172,18 @@ namespace BadFaith.Gameplay
                 return;
 
             _serverHeld.ServerRelease(eyeForward.normalized * _throwForce);
-            _serverHeld = null;
-            _isHolding.Value = false;
+            ServerSetHeld(null);
+        }
+
+        [ServerRpc]
+        private void RpcShoot(Vector3 eyePosition, Vector3 eyeForward)
+        {
+            if (_serverHeld == null)
+                return;
+            var judge = _serverHeld.GetComponent<TheJudge>();
+            if (judge == null)
+                return;
+            judge.ServerShoot(OwnerId, eyePosition, eyeForward);
         }
     }
 }
