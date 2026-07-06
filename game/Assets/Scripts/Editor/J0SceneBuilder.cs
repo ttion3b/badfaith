@@ -66,7 +66,13 @@ namespace BadFaith.EditorTools
 
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-            BuildArena();
+            if (FacilityMapBuilder.AssetsAvailable)
+                FacilityMapBuilder.Build(seed: System.Environment.TickCount);
+            else
+            {
+                Debug.LogWarning("[J0SceneBuilder] Pack Synty absent — construction de l'arène grise de secours. (Package Manager > My Assets > POLYGON Sampler Pack)");
+                BuildArena();
+            }
             BuildTerminal();
             BuildCapsule();
             BuildJudge();
@@ -126,6 +132,7 @@ namespace BadFaith.EditorTools
 
         private static Transform[] BuildSpawnPoints()
         {
+            // En cercle dans le hub, autour du Terminal.
             var parent = new GameObject("SpawnPoints").transform;
             var spawns = new Transform[8];
             for (int i = 0; i < spawns.Length; i++)
@@ -133,7 +140,7 @@ namespace BadFaith.EditorTools
                 float angle = i * Mathf.PI * 2f / spawns.Length;
                 var sp = new GameObject($"Spawn_{i}").transform;
                 sp.SetParent(parent);
-                sp.position = new Vector3(Mathf.Cos(angle) * 12f, 1.2f, Mathf.Sin(angle) * 12f);
+                sp.position = new Vector3(Mathf.Cos(angle) * 5f, 1.2f, Mathf.Sin(angle) * 5f);
                 sp.LookAt(new Vector3(0, 1.2f, 0));
                 spawns[i] = sp;
             }
@@ -181,7 +188,56 @@ namespace BadFaith.EditorTools
         /// <summary>Le Juge : l'unique revolver. Objet de scène, il se téléporte sur un des 5 spots côté serveur.</summary>
         private static void BuildJudge()
         {
-            var gun = CreateBox("TheJudge", new Vector3(0f, 0.6f, -5f), new Vector3(0.14f, 0.2f, 0.55f), new Color(0.05f, 0.05f, 0.06f));
+            // Parent neutre (échelle 1) : le visuel enfant ne sera pas déformé.
+            var gun = new GameObject("TheJudge");
+            gun.transform.position = new Vector3(0f, 0.6f, -5f);
+            var grabCollider = gun.AddComponent<BoxCollider>();
+            grabCollider.size = new Vector3(0.35f, 0.4f, 0.8f); // volume de prise généreux
+
+            var pistolAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/SyntyStudios/PolygonAdventure/Prefabs/Weapons/SM_Wep_MusketPistol_01.prefab");
+            if (pistolAsset != null)
+            {
+                var visual = (GameObject)PrefabUtility.InstantiatePrefab(pistolAsset);
+                PrefabUtility.UnpackPrefabInstance(visual, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                visual.name = "Visual";
+                visual.transform.SetParent(gun.transform);
+                visual.transform.localPosition = Vector3.zero;
+                visual.transform.localRotation = Quaternion.identity;
+                foreach (var c in visual.GetComponentsInChildren<Collider>())
+                    Object.DestroyImmediate(c);
+
+                // Ajusté par bounds à ~0,7 m de long : bien visible dans une main.
+                var bounds = new Bounds(Vector3.zero, Vector3.zero);
+                bool first = true;
+                foreach (var r in visual.GetComponentsInChildren<Renderer>())
+                {
+                    if (first) { bounds = r.bounds; first = false; }
+                    else bounds.Encapsulate(r.bounds);
+                }
+                float longest = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+                if (longest > 0.01f)
+                    visual.transform.localScale = Vector3.one * (0.7f / longest);
+                // Recentrage : bounds recalculés après scale.
+                var b2 = new Bounds(Vector3.zero, Vector3.zero);
+                first = true;
+                foreach (var r in visual.GetComponentsInChildren<Renderer>())
+                {
+                    if (first) { b2 = r.bounds; first = false; }
+                    else b2.Encapsulate(r.bounds);
+                }
+                visual.transform.position += gun.transform.position - b2.center;
+            }
+            else
+            {
+                var fallback = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                fallback.name = "Visual";
+                Object.DestroyImmediate(fallback.GetComponent<BoxCollider>());
+                fallback.transform.SetParent(gun.transform);
+                fallback.transform.localPosition = Vector3.zero;
+                fallback.transform.localScale = new Vector3(0.14f, 0.2f, 0.55f);
+                var fbRenderer = fallback.GetComponent<Renderer>();
+                fbRenderer.sharedMaterial = new Material(fbRenderer.sharedMaterial) { color = new Color(0.05f, 0.05f, 0.06f) };
+            }
             var rb = gun.AddComponent<Rigidbody>();
             rb.mass = 1f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -310,9 +366,39 @@ namespace BadFaith.EditorTools
 
         private static void BuildCubePrefab()
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "GrabCube";
-            go.transform.localScale = Vector3.one * 0.6f;
+            GameObject go;
+            var crateAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/SyntyStudios/PolygonAdventure/Prefabs/Props/SM_Prop_Crate_01.prefab");
+            if (crateAsset != null)
+            {
+                // Racine simple + visuel Synty : la physique reste sur un BoxCollider propre.
+                go = new GameObject("GrabCube");
+                var visual = (GameObject)PrefabUtility.InstantiatePrefab(crateAsset);
+                PrefabUtility.UnpackPrefabInstance(visual, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                visual.name = "Visual";
+                visual.transform.SetParent(go.transform);
+                foreach (var c in visual.GetComponentsInChildren<Collider>())
+                    Object.DestroyImmediate(c);
+
+                var bounds = new Bounds(Vector3.zero, Vector3.zero);
+                bool first = true;
+                foreach (var r in visual.GetComponentsInChildren<Renderer>())
+                {
+                    if (first) { bounds = r.bounds; first = false; }
+                    else bounds.Encapsulate(r.bounds);
+                }
+                visual.transform.localPosition = -bounds.center;
+                float scale = 0.7f / Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+                visual.transform.localScale = Vector3.one * scale;
+
+                var col = go.AddComponent<BoxCollider>();
+                col.size = bounds.size * scale;
+            }
+            else
+            {
+                go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                go.name = "GrabCube";
+                go.transform.localScale = Vector3.one * 0.6f;
+            }
 
             var rb = go.AddComponent<Rigidbody>();
             rb.mass = 2f;

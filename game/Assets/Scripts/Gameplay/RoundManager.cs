@@ -268,7 +268,7 @@ namespace BadFaith.Gameplay
             for (int i = 0; i < healths.Length; i++)
             {
                 float angle = i * Mathf.PI * 2f / Mathf.Max(1, healths.Length);
-                var pos = new Vector3(Mathf.Cos(angle) * 12f, 1.2f, Mathf.Sin(angle) * 12f);
+                var pos = new Vector3(Mathf.Cos(angle) * 5f, 1.2f, Mathf.Sin(angle) * 5f);
                 float yaw = Quaternion.LookRotation(new Vector3(-pos.x, 0f, -pos.z)).eulerAngles.y;
                 healths[i].ServerRevive(pos, yaw);
             }

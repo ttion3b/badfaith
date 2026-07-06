@@ -24,18 +24,28 @@ namespace BadFaith.Gameplay
             }
         }
 
-        /// <summary>Serveur : redistribue le loot (positions + valeurs).</summary>
+        /// <summary>Serveur : redistribue le loot (positions + valeurs), réparti dans les zones.</summary>
         public void ServerResetRound()
         {
             var rng = new System.Random();
+            int index = 0;
             foreach (var nob in _lootObjects)
             {
                 if (nob == null)
                     continue;
 
-                float x = (float)(rng.NextDouble() * 20.0 - 10.0);
-                float z = (float)(rng.NextDouble() * 20.0 - 10.0);
-                nob.transform.position = new Vector3(x, 0.7f, z);
+                Vector3 position;
+                if (MapZone.All.Count > 0)
+                {
+                    var zone = MapZone.All[index % MapZone.All.Count];
+                    position = zone.RandomPointInside(rng, shrink: 0.6f, y: 0.7f);
+                }
+                else
+                {
+                    position = new Vector3((float)(rng.NextDouble() * 20.0 - 10.0), 0.7f, (float)(rng.NextDouble() * 20.0 - 10.0));
+                }
+                index++;
+                nob.transform.position = position;
 
                 var rb = nob.GetComponent<Rigidbody>();
                 if (rb != null)

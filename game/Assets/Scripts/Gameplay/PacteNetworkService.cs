@@ -139,7 +139,8 @@ namespace BadFaith.Gameplay
             }
 
             // 3. Accidents naturels — le carburant du déni plausible.
-            foreach (var evt in _accidents.Tick(now, Time.deltaTime, zoneCount: 1, players))
+            int zoneCount = Mathf.Max(1, MapZone.All.Count);
+            foreach (var evt in _accidents.Tick(now, Time.deltaTime, zoneCount, players))
             {
                 _log.Add(evt);
                 _executor.ServerExecute(evt);
@@ -154,8 +155,9 @@ namespace BadFaith.Gameplay
                 return false;
 
             var def = PacteDefinition.Catalog.First(d => d.Id == offer.PacteId);
-            // Boîte grise mono-zone : les Pactes de zone ciblent l'arène entière (zone 0).
-            int zone = def.Targeting == PacteTargeting.Zone ? 0 : -1;
+            // Ciblage de zone : la salle où se trouve l'acheteur au moment d'accepter.
+            // (Le choix libre de zone sur la montre viendra avec l'UI dédiée.)
+            int zone = def.Targeting == PacteTargeting.Zone ? MapZone.ZoneIdAt(watch.transform.position) : -1;
             if (!_pactes.Accept(offerId, Time.time, targetZoneId: zone))
                 return false;
 

@@ -15,14 +15,14 @@ namespace BadFaith.Gameplay
     {
         public static TheJudge Instance { get; private set; }
 
-        /// <summary>Les 5 spots de spawn connus (semi-aléatoire, jamais annoncé).</summary>
+        /// <summary>Les 5 spots de spawn connus (semi-aléatoire, jamais annoncé) — un par recoin du complexe.</summary>
         private static readonly Vector3[] SpawnSpots =
         {
-            new Vector3(12f, 0.6f, 12f),
-            new Vector3(-13f, 0.6f, -11f),
-            new Vector3(14f, 0.6f, -9f),
-            new Vector3(-11f, 0.6f, 13f),
-            new Vector3(3f, 0.6f, -14f),
+            new Vector3(-17f, 0.6f, 4f),   // Aile Ruines
+            new Vector3(17f, 0.6f, -4f),   // Aile Est
+            new Vector3(-4f, 0.6f, -18f),  // Entrepôt Sud
+            new Vector3(5f, 0.6f, 20f),    // Quai Capsule
+            new Vector3(-5f, 0.6f, 5f),    // Hub, coin nord-ouest
         };
 
         private readonly SyncVar<bool> _loaded = new SyncVar<bool>(true);

@@ -15,10 +15,6 @@ namespace BadFaith.Gameplay
     {
         private const float GasDamagePerSecond = 15f;
 
-        private Light _sun;
-        private float _sunIntensity;
-        private Color _ambient;
-        private Coroutine _blackout;
         /// <summary>Zones de gaz actives, côté serveur, pour les dégâts.</summary>
         private readonly System.Collections.Generic.List<(Vector3 pos, float radius, float until)> _serverGasZones = new System.Collections.Generic.List<(Vector3, float, float)>();
 
@@ -28,15 +24,18 @@ namespace BadFaith.Gameplay
             switch (evt.Type)
             {
                 case HazardType.Blackout:
-                    RpcBlackout(evt.DurationSeconds);
+                    RpcBlackout(evt.ZoneId, evt.DurationSeconds);
                     break;
                 case HazardType.GasLeak:
-                    Vector3 pos = new Vector3(Random.Range(-14f, 14f), 2.5f, Random.Range(-14f, 14f));
+                    var zone = MapZone.Get(evt.ZoneId);
+                    Vector3 pos = zone != null
+                        ? zone.RandomPointInside(new System.Random(), shrink: 0.6f, y: 2f)
+                        : new Vector3(Random.Range(-14f, 14f), 2.5f, Random.Range(-14f, 14f));
                     _serverGasZones.Add((pos, 5f, Time.time + evt.DurationSeconds));
                     RpcGasLeak(pos, 5f, evt.DurationSeconds);
                     break;
-                // Porte grippée, brouillage, sol électrifié, panne du Terminal :
-                // pas encore de support dans la boîte grise — no-op silencieux.
+                // Porte grippée, brouillage, panne du Terminal :
+                // pas encore de support — no-op silencieux.
             }
         }
 
@@ -66,37 +65,22 @@ namespace BadFaith.Gameplay
         }
 
         [ObserversRpc]
-        private void RpcBlackout(float duration)
+        private void RpcBlackout(int zoneId, float duration)
         {
-            if (_blackout != null)
-                StopCoroutine(_blackout);
-            _blackout = StartCoroutine(BlackoutRoutine(duration));
+            StartCoroutine(BlackoutRoutine(zoneId, duration));
         }
 
-        private IEnumerator BlackoutRoutine(float duration)
+        private IEnumerator BlackoutRoutine(int zoneId, float duration)
         {
-            if (_sun == null)
-            {
-                foreach (var light in FindObjectsByType<Light>(FindObjectsSortMode.None))
-                {
-                    if (light.type == LightType.Directional)
-                    {
-                        _sun = light;
-                        _sunIntensity = light.intensity;
-                        _ambient = RenderSettings.ambientLight;
-                        break;
-                    }
-                }
-            }
-            if (_sun == null)
+            // Le Blackout éteint les lampes d'UNE zone (docs/gdd/03-pactes.md) —
+            // même code qu'il soit naturel ou de Pacte.
+            var zone = MapZone.Get(zoneId);
+            if (zone == null)
                 yield break;
 
-            _sun.intensity = 0.02f;
-            RenderSettings.ambientLight = new Color(0.01f, 0.01f, 0.02f);
+            zone.SetLights(false);
             yield return new WaitForSeconds(duration);
-            _sun.intensity = _sunIntensity;
-            RenderSettings.ambientLight = _ambient;
-            _blackout = null;
+            zone.SetLights(true);
         }
 
         [ObserversRpc]
