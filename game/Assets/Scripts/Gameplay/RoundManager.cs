@@ -99,7 +99,8 @@ namespace BadFaith.Gameplay
 
             if (_phase.Value == RoundPhase.Expedition)
             {
-                bool quotaOk = EconomyNetworkService.Instance != null && EconomyNetworkService.Instance.QuotaReached;
+                bool quotaOk = _players.Count > 0 &&
+                               EconomyNetworkService.Instance != null && EconomyNetworkService.Instance.QuotaReached;
                 if (quotaOk)
                 {
                     ServerStartExtraction("QUOTA ATTEINT — LA CAPSULE ARRIVE.");

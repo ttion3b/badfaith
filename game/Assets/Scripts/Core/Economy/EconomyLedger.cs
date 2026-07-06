@@ -38,7 +38,8 @@ namespace BadFaith.Core.Economy
 
         public int PocketOf(int playerId) => _pockets.GetValueOrDefault(playerId);
         public bool IsDead(int playerId) => _dead.Contains(playerId);
-        public bool QuotaReached => CommonPot >= Quota;
+        /// <summary>Un quota nul (aucun joueur enregistré) n'est jamais "atteint".</summary>
+        public bool QuotaReached => Quota > 0 && CommonPot >= Quota;
         public bool QuotaInGraceRange => CommonPot >= (int)(Quota * _rules.QuotaGraceThreshold);
 
         /// <summary>Dépôt au Terminal. Retourne le montant affiché publiquement (masqué par le Pacte Dépôt masqué → l'appelant n'affiche rien).</summary>
