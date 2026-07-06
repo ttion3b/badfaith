@@ -33,10 +33,11 @@ namespace BadFaith.EditorTools
             System.IO.Directory.CreateDirectory("Assets/Prefabs");
             System.IO.Directory.CreateDirectory("Assets/Scenes");
 
-            /* Sauvegardes de prefabs groupées : sans ça, FishNet re-hashe la
-             * collection à CHAQUE SaveAsPrefabAsset et hurle "same assetPath
-             * hash of 0" entre les deux sauvegardes (état transitoire). Groupé,
-             * son postprocess ne tourne qu'une fois, après StopAssetEditing. */
+            /* Le générateur de prefabs FishNet est coupé pendant nos sauvegardes :
+             * son incrémental re-hashe des références périmées et hurle "same
+             * assetPath hash of 0" (faux positif). Le refresh complet, forcé
+             * juste après, reconstruit la collection proprement. */
+            FishNet.Configuring.Configuration.Configurations.PrefabGenerator.Enabled = false;
             AssetDatabase.StartAssetEditing();
             try
             {
@@ -46,6 +47,7 @@ namespace BadFaith.EditorTools
             finally
             {
                 AssetDatabase.StopAssetEditing();
+                FishNet.Configuring.Configuration.Configurations.PrefabGenerator.Enabled = true;
             }
 
             // Régénère DefaultPrefabObjects (AssetPathHash inclus). Le Generator
