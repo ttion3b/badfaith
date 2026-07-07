@@ -332,23 +332,18 @@ namespace BadFaith.EditorTools
             var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
 
-            var tree = new UnityEditor.Animations.BlendTree
-            {
-                name = "Locomotion",
-                blendParameter = "Speed",
-                blendType = UnityEditor.Animations.BlendTreeType.Simple1D,
-                useAutomaticThresholds = false,
-            };
-            AssetDatabase.AddObjectToAsset(tree, controller);
+            // API canonique : crée l'état + le blend tree DANS l'asset (persistance gérée).
+            var state = controller.CreateBlendTreeInController("Locomotion", out UnityEditor.Animations.BlendTree tree, 0);
+            tree.blendParameter = "Speed";
+            tree.blendType = UnityEditor.Animations.BlendTreeType.Simple1D;
+            tree.useAutomaticThresholds = false;
             tree.AddChild(LoadClip("Stand--Idle.anim.fbx"), 0f);
             tree.AddChild(LoadClip("Locomotion--Walk_N.anim.fbx"), 2.2f);
             tree.AddChild(LoadClip("Locomotion--Run_N.anim.fbx"), 6.5f);
+            controller.layers[0].stateMachine.defaultState = state;
 
-            var stateMachine = controller.layers[0].stateMachine;
-            var state = stateMachine.AddState("Locomotion");
-            state.motion = tree;
-            stateMachine.defaultState = state;
             EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
             return controller;
         }
 
