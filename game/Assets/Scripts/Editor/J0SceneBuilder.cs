@@ -302,15 +302,59 @@ namespace BadFaith.EditorTools
             kiosk.AddComponent<DepositTerminal>(); // trouve ses écrans (TextMesh enfants) tout seul
         }
 
+        /// <summary>Les 15 silhouettes jouables (l'identité visuelle des accusations).</summary>
+        private static readonly string[] CharacterVariantPaths =
+        {
+            "Character_Knight_White", "Character_Knight_Brown", "Character_Knight_Black",
+            "Character_Peasant_White", "Character_Peasant_Brown", "Character_Peasant_Black",
+            "Character_Shopkeeper_White", "Character_Shopkeeper_Brown", "Character_Shopkeeper_Black",
+            "Character_Viking_White", "Character_Viking_Brown", "Character_Viking_Black",
+            "Character_Warrior_White", "Character_Warrior_Brown", "Character_Warrior_Black",
+        };
+
+        private const string StarterAnimDir = "Assets/Starter Assets/Runtime/ThirdPersonController/Character/Animations/";
+
+        private static AnimationClip LoadClip(string fbxName)
+        {
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(StarterAnimDir + fbxName))
+                if (asset is AnimationClip clip && !clip.name.StartsWith("__preview"))
+                    return clip;
+            Debug.LogWarning($"[J0SceneBuilder] Clip introuvable dans {fbxName}");
+            return null;
+        }
+
+        /// <summary>Contrôleur d'animation : blend 1D Idle → Marche → Course piloté par Speed.</summary>
+        private static RuntimeAnimatorController BuildAnimatorController()
+        {
+            System.IO.Directory.CreateDirectory("Assets/Anim");
+            const string path = "Assets/Anim/BadFaithCharacter.controller";
+            AssetDatabase.DeleteAsset(path);
+            var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);
+            controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
+
+            var tree = new UnityEditor.Animations.BlendTree
+            {
+                name = "Locomotion",
+                blendParameter = "Speed",
+                blendType = UnityEditor.Animations.BlendTreeType.Simple1D,
+                useAutomaticThresholds = false,
+            };
+            AssetDatabase.AddObjectToAsset(tree, controller);
+            tree.AddChild(LoadClip("Stand--Idle.anim.fbx"), 0f);
+            tree.AddChild(LoadClip("Locomotion--Walk_N.anim.fbx"), 2.2f);
+            tree.AddChild(LoadClip("Locomotion--Run_N.anim.fbx"), 6.5f);
+
+            var stateMachine = controller.layers[0].stateMachine;
+            var state = stateMachine.AddState("Locomotion");
+            state.motion = tree;
+            stateMachine.defaultState = state;
+            EditorUtility.SetDirty(controller);
+            return controller;
+        }
+
         private static void BuildPlayerPrefab()
         {
             var root = new GameObject("Player");
-
-            var capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsule.name = "Body";
-            capsule.transform.SetParent(root.transform);
-            capsule.transform.localPosition = Vector3.zero;
-            Object.DestroyImmediate(capsule.GetComponent<CapsuleCollider>()); // le CharacterController suffit
 
             var cc = root.AddComponent<CharacterController>();
             cc.height = 2f;
@@ -347,18 +391,23 @@ namespace BadFaith.EditorTools
             grabberSo.FindProperty("_holdAnchor").objectReferenceValue = holdAnchor;
             grabberSo.ApplyModifiedPropertiesWithoutUndo();
 
-            // La Montre : indicateur de poignet visible par tous (le tell social du GDD).
-            var wrist = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            wrist.name = "WristWatch";
-            Object.DestroyImmediate(wrist.GetComponent<BoxCollider>());
-            wrist.transform.SetParent(root.transform);
-            wrist.transform.localPosition = new Vector3(0.42f, -0.15f, 0.45f);
-            wrist.transform.localScale = new Vector3(0.14f, 0.1f, 0.14f);
+            // La Montre : l'indicateur de poignet est posé à runtime par
+            // PlayerAppearance, sur la vraie main du modèle 3D.
+            root.AddComponent<PlayerWatch>();
 
-            var watch = root.AddComponent<PlayerWatch>();
-            var watchSo = new SerializedObject(watch);
-            watchSo.FindProperty("_wristIndicator").objectReferenceValue = wrist.GetComponent<Renderer>();
-            watchSo.ApplyModifiedPropertiesWithoutUndo();
+            // L'apparence : une des 15 silhouettes Synty + animations.
+            var appearance = root.AddComponent<PlayerAppearance>();
+            var appearanceSo = new SerializedObject(appearance);
+            var variantsProp = appearanceSo.FindProperty("_characterVariants");
+            variantsProp.arraySize = CharacterVariantPaths.Length;
+            for (int i = 0; i < CharacterVariantPaths.Length; i++)
+            {
+                var characterPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    $"Assets/SyntyStudios/PolygonAdventure/Prefabs/Characters/{CharacterVariantPaths[i]}.prefab");
+                variantsProp.GetArrayElementAtIndex(i).objectReferenceValue = characterPrefab;
+            }
+            appearanceSo.FindProperty("_animatorController").objectReferenceValue = BuildAnimatorController();
+            appearanceSo.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
             Object.DestroyImmediate(root);

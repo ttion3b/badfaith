@@ -69,5 +69,44 @@ namespace BadFaith.EditorTools
             AssetDatabase.SaveAssets();
             Debug.Log($"[SyntyMaterialFixer] {fixedCount} matériaux réparés sur {checkedCount} vérifiés. S'il reste du rose : dis-le-moi avec le nom de l'objet.");
         }
+
+        /// <summary>
+        /// Les pièces POLYGON Prototype sortent orange/jaune criard. Cette passe
+        /// les repeint en gris industriel désaturé — le complexe de La Direction
+        /// n'a pas de budget décoration.
+        /// </summary>
+        [MenuItem("MAUVAISE FOI/Repeindre le complexe (gris industriel)")]
+        public static void RepaintPrototypeMaterials()
+        {
+            var greys = new[]
+            {
+                new Color(0.42f, 0.44f, 0.47f), // murs
+                new Color(0.32f, 0.34f, 0.38f),
+                new Color(0.25f, 0.26f, 0.30f), // sols
+                new Color(0.50f, 0.52f, 0.55f),
+                new Color(0.36f, 0.38f, 0.42f),
+            };
+
+            int painted = 0;
+            string[] guids = AssetDatabase.FindAssets("t:Material", new[] { "Assets/SyntyStudios/PolygonPrototype/Materials" });
+            foreach (var guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (mat == null)
+                    continue;
+                Color grey = greys[painted % greys.Length];
+                if (mat.HasProperty("_BaseColor"))
+                    mat.SetColor("_BaseColor", grey);
+                if (mat.HasProperty("_Color"))
+                    mat.SetColor("_Color", grey);
+                if (mat.HasProperty("_Smoothness"))
+                    mat.SetFloat("_Smoothness", 0.08f);
+                EditorUtility.SetDirty(mat);
+                painted++;
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[SyntyMaterialFixer] {painted} matériaux Prototype repeints en gris industriel.");
+        }
     }
 }

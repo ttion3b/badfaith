@@ -29,6 +29,11 @@ namespace BadFaith.Gameplay
         private AudioSource _buzzSource;
 
         public int Pocket => _pocket.Value;
+        /// <summary>Vrai quand le porteur consulte sa montre — public, c'est le tell.</summary>
+        public bool Consulting => _consulting.Value;
+
+        /// <summary>Appelé par PlayerAppearance : l'indicateur vit désormais au poignet du modèle 3D.</summary>
+        public void SetWristIndicator(Renderer renderer) => _wristIndicator = renderer;
 
         private void Awake()
         {
