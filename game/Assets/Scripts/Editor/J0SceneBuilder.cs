@@ -402,6 +402,17 @@ namespace BadFaith.EditorTools
                 variantsProp.GetArrayElementAtIndex(i).objectReferenceValue = characterPrefab;
             }
             appearanceSo.FindProperty("_animatorController").objectReferenceValue = BuildAnimatorController();
+
+            // Sons de pas Starter Assets (joués par les AnimationEvents des clips).
+            const string sfxDir = "Assets/Starter Assets/Runtime/ThirdPersonController/Character/Sfx/";
+            var footsteps = appearanceSo.FindProperty("_footstepClips");
+            footsteps.arraySize = 10;
+            for (int i = 0; i < 10; i++)
+                footsteps.GetArrayElementAtIndex(i).objectReferenceValue =
+                    AssetDatabase.LoadAssetAtPath<AudioClip>($"{sfxDir}Player_Footstep_{i + 1:00}.wav");
+            appearanceSo.FindProperty("_landClip").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<AudioClip>(sfxDir + "Player_Land.wav");
+
             appearanceSo.ApplyModifiedPropertiesWithoutUndo();
 
             PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);

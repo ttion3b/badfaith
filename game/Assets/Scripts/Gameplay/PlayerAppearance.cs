@@ -15,6 +15,8 @@ namespace BadFaith.Gameplay
     {
         [SerializeField] private GameObject[] _characterVariants;
         [SerializeField] private RuntimeAnimatorController _animatorController;
+        [SerializeField] private AudioClip[] _footstepClips;
+        [SerializeField] private AudioClip _landClip;
 
         private readonly SyncVar<int> _variantIndex = new SyncVar<int>();
 
@@ -59,6 +61,11 @@ namespace BadFaith.Gameplay
                 _animator = visual.AddComponent<Animator>();
             _animator.runtimeAnimatorController = _animatorController;
             _animator.applyRootMotion = false;
+
+            // Récepteur des AnimationEvents (OnFootstep/OnLand) sur le même
+            // GameObject que l'Animator — les pas s'entendent à 14 m.
+            var audioReceiver = _animator.gameObject.AddComponent<CharacterAudioReceiver>();
+            audioReceiver.Initialize(_footstepClips, _landClip);
 
             // En vue première personne, on ne voit pas son propre corps —
             // mais on garde son ombre (et les autres nous voient, eux).
