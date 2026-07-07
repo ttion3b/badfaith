@@ -122,15 +122,16 @@ namespace BadFaith.Gameplay
             if (_animator == null || (_health != null && _health.IsDead))
                 return;
 
-            // Consultation de la montre : le bras gauche se lève — GESTE PUBLIC,
-            // c'est le tell social du GDD, désormais en langage corporel.
+            // Consultation de la montre : le bras gauche se plie devant le visage —
+            // GESTE PUBLIC, le tell social du GDD en langage corporel.
+            // (Angles statiques : réglables à chaud en play mode, cuits ensuite.)
             bool consulting = _watch != null && _watch.Consulting;
             _consultBlend = Mathf.MoveTowards(_consultBlend, consulting ? 1f : 0f, Time.deltaTime * 5f);
             if (_consultBlend > 0.001f)
             {
-                ApplyBoneOffset(HumanBodyBones.LeftUpperArm, new Vector3(-35f, -25f, -20f), _consultBlend);
-                ApplyBoneOffset(HumanBodyBones.LeftLowerArm, new Vector3(-65f, -20f, 0f), _consultBlend);
-                ApplyBoneOffset(HumanBodyBones.Head, new Vector3(20f, -15f, 0f), _consultBlend);
+                ApplyBoneOffset(HumanBodyBones.LeftUpperArm, ConsultUpperArm, _consultBlend);
+                ApplyBoneOffset(HumanBodyBones.LeftLowerArm, ConsultLowerArm, _consultBlend);
+                ApplyBoneOffset(HumanBodyBones.Head, ConsultHead, _consultBlend);
             }
 
             // Le Juge en main : bras droit tendu. La menace est un choix public.
@@ -138,10 +139,19 @@ namespace BadFaith.Gameplay
             _aimBlend = Mathf.MoveTowards(_aimBlend, aiming ? 1f : 0f, Time.deltaTime * 5f);
             if (_aimBlend > 0.001f)
             {
-                ApplyBoneOffset(HumanBodyBones.RightUpperArm, new Vector3(-70f, 0f, 0f), _aimBlend);
-                ApplyBoneOffset(HumanBodyBones.RightLowerArm, new Vector3(-15f, 0f, 0f), _aimBlend);
+                ApplyBoneOffset(HumanBodyBones.RightUpperArm, AimUpperArm, _aimBlend);
+                ApplyBoneOffset(HumanBodyBones.RightLowerArm, AimLowerArm, _aimBlend);
             }
         }
+
+        // Valeurs réglées visuellement en play mode via MCP (rig Synty : sur les
+        // os de bras, X = torsion, Z = lever latéral, Y = balancer avant(+)/arrière(-),
+        // signes miroir pour le bras droit).
+        public static Vector3 ConsultUpperArm = new Vector3(0f, 50f, -45f);
+        public static Vector3 ConsultLowerArm = new Vector3(0f, 60f, 10f);
+        public static Vector3 ConsultHead = new Vector3(12f, -18f, 0f);
+        public static Vector3 AimUpperArm = new Vector3(0f, -70f, 60f);
+        public static Vector3 AimLowerArm = new Vector3(0f, -20f, 0f);
 
         private void ApplyBoneOffset(HumanBodyBones bone, Vector3 eulerOffset, float weight)
         {
