@@ -22,6 +22,9 @@ namespace BadFaith.Gameplay
         private CharacterController _controller;
         private float _pitch;
         private float _verticalVelocity;
+        private Camera _ownCamera;
+        private bool _thirdPerson;
+        private const float ThirdPersonDistance = 3.4f;
 
         private void Awake()
         {
@@ -41,6 +44,7 @@ namespace BadFaith.Gameplay
                 sceneCam.gameObject.SetActive(false);
             if (ownCam != null)
                 ownCam.gameObject.SetActive(true);
+            _ownCamera = ownCam;
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -80,6 +84,15 @@ namespace BadFaith.Gameplay
                 _cameraHolder.localEulerAngles = new Vector3(_pitch, 0f, 0f);
             }
 
+            // V : bascule première/troisième personne.
+            if (kb.vKey.wasPressedThisFrame)
+            {
+                _thirdPerson = !_thirdPerson;
+                var appearance = GetComponent<PlayerAppearance>();
+                if (appearance != null)
+                    appearance.SetFirstPerson(!_thirdPerson);
+            }
+
             if (dead || !_controller.enabled)
                 return;
 
@@ -106,6 +119,26 @@ namespace BadFaith.Gameplay
             move.y = _verticalVelocity;
 
             _controller.Move(move * Time.deltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            if (!IsOwner || _ownCamera == null)
+                return;
+
+            if (!_thirdPerson)
+            {
+                _ownCamera.transform.localPosition = Vector3.zero;
+                return;
+            }
+
+            // Caméra épaule : recule derrière le regard, sans traverser les murs.
+            Vector3 origin = _cameraHolder.position;
+            Vector3 back = -_cameraHolder.forward;
+            float distance = ThirdPersonDistance;
+            if (Physics.SphereCast(origin, 0.25f, back, out RaycastHit hit, ThirdPersonDistance))
+                distance = Mathf.Max(0.4f, hit.distance - 0.15f);
+            _ownCamera.transform.position = origin + back * distance + _cameraHolder.right * 0.35f;
         }
     }
 }

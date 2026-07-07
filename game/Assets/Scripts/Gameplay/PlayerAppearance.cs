@@ -23,6 +23,7 @@ namespace BadFaith.Gameplay
         private Animator _animator;
         private PlayerWatch _watch;
         private PlayerHealth _health;
+        private Renderer[] _ownRenderers;
         private Vector3 _lastPosition;
         private float _smoothedSpeed;
         private float _consultBlend;
@@ -69,11 +70,9 @@ namespace BadFaith.Gameplay
 
             // En vue première personne, on ne voit pas son propre corps —
             // mais on garde son ombre (et les autres nous voient, eux).
+            _ownRenderers = visual.GetComponentsInChildren<Renderer>();
             if (IsOwner)
-            {
-                foreach (var renderer in visual.GetComponentsInChildren<Renderer>())
-                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
-            }
+                SetFirstPerson(true);
 
             // La montre, physiquement au poignet gauche.
             var hand = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
@@ -88,6 +87,19 @@ namespace BadFaith.Gameplay
                 if (_watch != null)
                     _watch.SetWristIndicator(watchCube.GetComponent<Renderer>());
             }
+        }
+
+        /// <summary>Propriétaire uniquement : corps en ombre-seule (FPS) ou visible (3e personne).</summary>
+        public void SetFirstPerson(bool firstPerson)
+        {
+            if (!IsOwner || _ownRenderers == null)
+                return;
+            var mode = firstPerson
+                ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly
+                : UnityEngine.Rendering.ShadowCastingMode.On;
+            foreach (var renderer in _ownRenderers)
+                if (renderer != null)
+                    renderer.shadowCastingMode = mode;
         }
 
         private void Update()

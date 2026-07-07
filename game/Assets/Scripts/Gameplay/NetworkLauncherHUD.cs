@@ -11,6 +11,22 @@ namespace BadFaith.UI
     {
         private string _address = "localhost";
 
+        private void Start()
+        {
+            // Arrivée depuis le menu principal : la connexion démarre toute seule.
+            switch (BadFaith.Menu.MenuIntent.Mode)
+            {
+                case BadFaith.Menu.MenuMode.Host:
+                    InstanceFinder.ServerManager.StartConnection();
+                    InstanceFinder.ClientManager.StartConnection();
+                    break;
+                case BadFaith.Menu.MenuMode.Join:
+                    InstanceFinder.ClientManager.StartConnection(BadFaith.Menu.MenuIntent.Address);
+                    break;
+            }
+            BadFaith.Menu.MenuIntent.Clear();
+        }
+
         private void OnGUI()
         {
             bool serverStarted = InstanceFinder.IsServerStarted;
