@@ -78,6 +78,10 @@ namespace BadFaith.Menu
 
         private void Update()
         {
+            // Période de grâce : le clic sur le bouton Play (ou sur la fenêtre)
+            // arrive sur les premières frames et skippait l'intro instantanément.
+            if (Time.timeSinceLevelLoad < 1f)
+                return;
             var kb = Keyboard.current;
             var mouse = Mouse.current;
             if ((kb != null && kb.anyKey.wasPressedThisFrame) || (mouse != null && mouse.leftButton.wasPressedThisFrame))
