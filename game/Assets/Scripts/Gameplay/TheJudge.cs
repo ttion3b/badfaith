@@ -23,6 +23,7 @@ namespace BadFaith.Gameplay
             new Vector3(-4f, 0.6f, -18f),  // Entrepôt Sud
             new Vector3(5f, 0.6f, 20f),    // Quai Capsule
             new Vector3(-5f, 0.6f, 5f),    // Hub, coin nord-ouest
+            new Vector3(30f, 0.6f, 30f),   // La Caverne, quadrant nord-est
         };
 
         private readonly SyncVar<bool> _loaded = new SyncVar<bool>(true);

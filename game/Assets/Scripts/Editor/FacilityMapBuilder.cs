@@ -63,6 +63,21 @@ namespace BadFaith.EditorTools
         private const string SignWarningPath = City + "Props/SM_Prop_Sign_Warning_01.prefab";
         private const string PipePresetPath = City + "Props/SM_Prop_Pipe_Preset_01.prefab";
 
+        // ---- La Caverne ----
+        private const string CliffAPath = Knights + "Environments/SM_Env_Cliff_01.prefab";
+        private const string CliffBPath = Knights + "Environments/SM_Env_Cliff_02.prefab";
+        private const string StalagmiteAPath = Adv + "Environments/SM_Env_Stalagmite_01.prefab";
+        private const string StalagmiteBPath = Adv + "Environments/SM_Env_Stalagmite_02.prefab";
+        private const string StalagmiteCPath = Adv + "Environments/SM_Env_Stalagmite_03.prefab";
+        private const string MushroomPath = Adv + "Environments/SM_Env_Mushroom_01.prefab";
+        private const string RockPath = Adv + "Environments/SM_Env_Rock_05.prefab";
+        private const string RockwallPath = Knights + "Buildings/SM_Bld_Rockwall_Straight_01.prefab";
+        private const string ArchwayPath = Knights + "Buildings/SM_Bld_Rockwall_Archway_01.prefab";
+
+        /// <summary>Rayon de la caverne (mur de falaises) et rayon intérieur de la zone rocheuse.</summary>
+        private const float CavernRadius = 57f;
+        private const float FacilityEdge = 22.5f;
+
         private struct Room
         {
             public int ZoneId;
@@ -94,8 +109,11 @@ namespace BadFaith.EditorTools
                 BuildRoom(room, mapRoot, rng);
 
             BuildInnerDoorWalls(mapRoot);
+            // La caverne se construit EN DERNIER : MapZone.ZoneIdAt parcourt le
+            // registre dans l'ordre de création, les salles doivent gagner.
+            BuildCavern(mapRoot, rng);
             SetupLightingAmbiance();
-            Debug.Log($"[FacilityMapBuilder] Complexe construit (seed {seed}) : {Rooms.Length} zones.");
+            Debug.Log($"[FacilityMapBuilder] Complexe souterrain construit (seed {seed}) : {Rooms.Length + 1} zones.");
         }
 
         // ==================== SALLES ====================
@@ -126,6 +144,18 @@ namespace BadFaith.EditorTools
             DressRoom(room, zoneGo.transform, rng);
         }
 
+        /// <summary>
+        /// Vrai si cette position est la sortie vers la caverne : le milieu du
+        /// mur extérieur des ailes Ruines, Est et Entrepôt (le Quai reste clos).
+        /// </summary>
+        private static bool IsCavernExit(Room room, float alongAxisPos)
+        {
+            if (room.ZoneId is not (1 or 2 or 3))
+                return false;
+            float middle = room.ZoneId == 3 ? room.Area.center.x : room.Area.center.y;
+            return Mathf.Abs(alongAxisPos - middle) < 0.1f;
+        }
+
         /// <summary>Murs d'enceinte : uniquement les bords qui donnent sur l'extérieur du complexe.</summary>
         private static void BuildPerimeterWalls(Room room, Transform parent)
         {
@@ -134,13 +164,32 @@ namespace BadFaith.EditorTools
 
             for (float x = r.xMin + 2.5f; x < r.xMax; x += 5f)
             {
-                if (r.yMax >= ext) PlaceFitted(WallPath, new Vector3(x, 0f, r.yMax), 0f, parent);
-                if (r.yMin <= -ext) PlaceFitted(WallPath, new Vector3(x, 0f, r.yMin), 180f, parent);
+                if (r.yMax >= ext)
+                    PlaceFitted(WallPath, new Vector3(x, 0f, r.yMax), 0f, parent);
+                if (r.yMin <= -ext)
+                {
+                    if (IsCavernExit(room, x))
+                        PlaceFitted(ArchwayPath, new Vector3(x, 0f, r.yMin), 180f, parent);
+                    else
+                        PlaceFitted(WallPath, new Vector3(x, 0f, r.yMin), 180f, parent);
+                }
             }
             for (float z = r.yMin + 2.5f; z < r.yMax; z += 5f)
             {
-                if (r.xMax >= ext) PlaceFitted(WallPath, new Vector3(r.xMax, 0f, z), -90f, parent);
-                if (r.xMin <= -ext) PlaceFitted(WallPath, new Vector3(r.xMin, 0f, z), 90f, parent);
+                if (r.xMax >= ext)
+                {
+                    if (IsCavernExit(room, z))
+                        PlaceFitted(ArchwayPath, new Vector3(r.xMax, 0f, z), -90f, parent);
+                    else
+                        PlaceFitted(WallPath, new Vector3(r.xMax, 0f, z), -90f, parent);
+                }
+                if (r.xMin <= -ext)
+                {
+                    if (IsCavernExit(room, z))
+                        PlaceFitted(ArchwayPath, new Vector3(r.xMin, 0f, z), 90f, parent);
+                    else
+                        PlaceFitted(WallPath, new Vector3(r.xMin, 0f, z), 90f, parent);
+                }
             }
 
             // Les ailes ont aussi des murs sur leurs flancs (les coins de la croix sont vides).
@@ -189,6 +238,108 @@ namespace BadFaith.EditorTools
                 PlaceFitted(WallDoorPath, new Vector3(0f, 0f, z), yRot, parent);
                 PlaceFitted(WallPath, new Vector3(5f, 0f, z), yRot, parent);
             }
+        }
+
+        // ==================== LA CAVERNE ====================
+
+        /// <summary>
+        /// Le monde extérieur : une caverne géante autour du complexe, façon
+        /// Voyage au centre de la Terre. Sol de terre, anneau de falaises,
+        /// stalagmites, champignons luminescents (les "lampes" de la zone 5 —
+        /// un Blackout dans la caverne éteint leur lueur).
+        /// </summary>
+        private static void BuildCavern(Transform mapRoot, System.Random rng)
+        {
+            var zoneGo = new GameObject("Zone_5_Caverne");
+            zoneGo.transform.SetParent(mapRoot);
+            var zone = zoneGo.AddComponent<MapZone>();
+            zone.ZoneId = 5;
+            zone.ZoneName = "La Caverne";
+            zone.AreaCenter = new Vector3(0f, 4f, 0f);
+            zone.AreaSize = new Vector3(CavernRadius * 2f, 16f, CavernRadius * 2f);
+
+            // Sol de terre continu sous toute la caverne.
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.name = "CavernGround";
+            ground.transform.SetParent(zoneGo.transform);
+            ground.transform.position = new Vector3(0f, -0.3f, 0f);
+            ground.transform.localScale = new Vector3(CavernRadius * 2.4f, 0.5f, CavernRadius * 2.4f);
+            var groundRenderer = ground.GetComponent<Renderer>();
+            groundRenderer.sharedMaterial = new Material(groundRenderer.sharedMaterial) { color = new Color(0.16f, 0.12f, 0.09f) };
+
+            // L'anneau de falaises : le bout du monde.
+            const int cliffCount = 30;
+            for (int i = 0; i < cliffCount; i++)
+            {
+                float angle = i * Mathf.PI * 2f / cliffCount + (float)rng.NextDouble() * 0.06f;
+                var pos = new Vector3(Mathf.Cos(angle) * CavernRadius, 0f, Mathf.Sin(angle) * CavernRadius);
+                float facing = -angle * Mathf.Rad2Deg + 90f + rng.Next(-15, 15);
+                var cliff = PlaceFitted(rng.Next(2) == 0 ? CliffAPath : CliffBPath, pos, facing, zoneGo.transform);
+                if (cliff != null)
+                    cliff.transform.localScale = Vector3.one * (1.6f + (float)rng.NextDouble() * 1.2f);
+            }
+
+            // Stalagmites, rochers, éboulis et pans de roche dans l'anneau explorable.
+            for (int i = 0; i < 22; i++)
+            {
+                string path = rng.Next(3) switch { 0 => StalagmiteAPath, 1 => StalagmiteBPath, _ => StalagmiteCPath };
+                var stalagmite = PlaceFitted(path, RandomInRing(rng), Angle(rng), zoneGo.transform);
+                if (stalagmite != null)
+                    stalagmite.transform.localScale = Vector3.one * (0.8f + (float)rng.NextDouble() * 1.8f);
+            }
+            for (int i = 0; i < 14; i++)
+                PlaceFitted(RockPath, RandomInRing(rng), Angle(rng), zoneGo.transform);
+            for (int i = 0; i < 8; i++)
+                PlaceFitted(RockPilePath, RandomInRing(rng), Angle(rng), zoneGo.transform);
+            for (int i = 0; i < 6; i++)
+                PlaceFitted(RockwallPath, RandomInRing(rng), Angle(rng), zoneGo.transform);
+
+            // Les champignons luminescents — la seule lumière de la caverne.
+            for (int i = 0; i < 12; i++)
+            {
+                Vector3 pos = RandomInRing(rng);
+                var mushroom = PlaceFitted(MushroomPath, pos, Angle(rng), zoneGo.transform, addCollider: false);
+                if (mushroom != null)
+                    mushroom.transform.localScale = Vector3.one * (1.5f + (float)rng.NextDouble() * 2f);
+                var lightGo = new GameObject("MushroomLight");
+                lightGo.transform.SetParent(zoneGo.transform);
+                lightGo.transform.position = pos + new Vector3(0f, 1.2f, 0f);
+                var light = lightGo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(0.35f, 0.9f, 0.75f);
+                light.intensity = 2.2f;
+                light.range = 9f;
+            }
+
+            // Une lanterne à chaque sortie du complexe : le seuil entre deux mondes.
+            foreach (var exit in new[] { new Vector3(-24.5f, 0f, 0f), new Vector3(24.5f, 0f, 0f), new Vector3(0f, 0f, -24.5f) })
+            {
+                PlaceFitted(LanternPath, exit, 0f, zoneGo.transform);
+                var lightGo = new GameObject("ExitLight");
+                lightGo.transform.SetParent(zoneGo.transform);
+                lightGo.transform.position = exit + new Vector3(0f, 1.6f, 0f);
+                var light = lightGo.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(1f, 0.8f, 0.5f);
+                light.intensity = 2f;
+                light.range = 10f;
+            }
+        }
+
+        /// <summary>Point aléatoire dans l'anneau explorable (hors complexe, dans les falaises).</summary>
+        private static Vector3 RandomInRing(System.Random rng)
+        {
+            for (int attempt = 0; attempt < 30; attempt++)
+            {
+                float angle = (float)rng.NextDouble() * Mathf.PI * 2f;
+                float radius = FacilityEdge + 4f + (float)rng.NextDouble() * (CavernRadius - FacilityEdge - 9f);
+                var pos = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                // Écarte les abords immédiats des trois sorties (passage libre).
+                if (Mathf.Abs(pos.z) < 4f && Mathf.Abs(Mathf.Abs(pos.x) - 25f) < 6f) continue;
+                if (Mathf.Abs(pos.x) < 4f && Mathf.Abs(pos.z + 25f) < 6f) continue;
+                return pos;
+            }
+            return new Vector3(0f, 0f, -35f);
         }
 
         // ==================== HABILLAGE ====================
