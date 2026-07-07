@@ -147,9 +147,9 @@ namespace BadFaith.Gameplay
         // Valeurs réglées visuellement en play mode via MCP (rig Synty : sur les
         // os de bras, X = torsion, Z = lever latéral, Y = balancer avant(+)/arrière(-),
         // signes miroir pour le bras droit).
-        public static Vector3 ConsultUpperArm = new Vector3(0f, 50f, -45f);
-        public static Vector3 ConsultLowerArm = new Vector3(0f, 60f, 10f);
-        public static Vector3 ConsultHead = new Vector3(12f, -18f, 0f);
+        public static Vector3 ConsultUpperArm = new Vector3(0f, 78f, -18f);
+        public static Vector3 ConsultLowerArm = new Vector3(25f, 95f, 18f);
+        public static Vector3 ConsultHead = new Vector3(18f, -22f, 0f);
         public static Vector3 AimUpperArm = new Vector3(0f, -70f, 60f);
         public static Vector3 AimLowerArm = new Vector3(0f, -20f, 0f);
 
