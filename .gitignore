@@ -26,6 +26,10 @@ Desktop.ini
 .idea/
 .vscode/
 
+# Captures d'écran MCP (travail local)
+game/Assets/Screenshots/
+game/Assets/Screenshots.meta
+
 # graphify : on versionne graph.json + rapport, pas les fichiers de travail
 graphify-out/.graphify_*
 graphify-out/graph.html
