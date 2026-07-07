@@ -57,7 +57,7 @@ namespace BadFaith.EditorTools
             var menuGroup = CreateGroup(canvasGo.transform, "MenuGroup");
             CreateImage(menuGroup.transform, "Fond", new Color(0.05f, 0.05f, 0.07f, 1f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-            CreateText(menuGroup.transform, "Titre", "MAUVAISE FOI", 110, DirectionYellow,
+            CreateText(menuGroup.transform, "Titre", "BAD FAITH", 130, DirectionYellow,
                 new Vector2(0.5f, 0.78f), rotationZ: -2.5f);
             CreateText(menuGroup.transform, "SousTitre", "La Direction vous attend.", 34, Ink,
                 new Vector2(0.5f, 0.66f));
